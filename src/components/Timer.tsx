@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Box, Button, HStack, Text } from "@chakra-ui/react";
+<<<<<<< HEAD
 import { firestore } from "../main";
+=======
+import { firestore } from "../main"; // Импорт вашей конфигурации
+>>>>>>> c188b87e1c9a298710c3eea8beae062c0353604e
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 
 const Timer = ({ roomId }: { roomId: string }) => {
