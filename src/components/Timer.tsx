@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Box, Button, HStack, Text, IconButton } from "@chakra-ui/react";
+import { Box, Button, HStack, Text } from "@chakra-ui/react";
 import { firestore } from "../main"; // Импорт вашей конфигурации
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 // Можете использовать иконки, если хотите (npm install react-icons)
