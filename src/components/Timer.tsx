@@ -1,30 +1,37 @@
 import { useEffect, useState } from "react";
-import { Box, Button, HStack, Text, IconButton } from "@chakra-ui/react";
-import { firestore } from "../main"; // Импорт вашей конфигурации
+import { Box, Button, HStack, Text } from "@chakra-ui/react";
+import { firestore } from "../main";
 import { doc, updateDoc, onSnapshot } from "firebase/firestore";
-// Можете использовать иконки, если хотите (npm install react-icons)
-// import { FaPlay, FaStop, FaRedo } from "react-icons/fa";
 
 const Timer = ({ roomId }: { roomId: string }) => {
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
 
-  // 1. СЛУШАЕМ FIREBASE (Синхронизация состояния)
+  // 1. СЛУШАЕМ FIREBASE
   useEffect(() => {
     const roomRef = doc(firestore, "rooms", roomId);
     const unsubscribe = onSnapshot(roomRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         
-        // Если в базе есть таймер
         if (data.timer) {
-          setIsActive(data.timer.status === "running");
-          setStartTime(data.timer.startTime);
-          
-          // Если таймер остановлен, показываем зафиксированное время
-          if (data.timer.status === "stopped" && data.timer.elapsed) {
-            setSeconds(data.timer.elapsed);
+          // ОБНОВЛЕНИЕ СОСТОЯНИЯ
+          if (data.timer.status === "running") {
+            setIsActive(true);
+            setStartTime(data.timer.startTime);
+          } else if (data.timer.status === "stopped") {
+            setIsActive(false);
+            setStartTime(null);
+            // Важно: при остановке берем сохраненное время из базы
+            if (data.timer.elapsed !== undefined) {
+                setSeconds(data.timer.elapsed);
+            }
+          } else {
+            // Статус "idle" (Сброс)
+            setIsActive(false);
+            setStartTime(null);
+            setSeconds(0);
           }
         }
       }
@@ -32,21 +39,19 @@ const Timer = ({ roomId }: { roomId: string }) => {
     return () => unsubscribe();
   }, [roomId]);
 
-  // 2. ТИКАЕМ ЛОКАЛЬНО (Каждую секунду обновляем экран)
+  // 2. ТИКАЕМ ЛОКАЛЬНО
   useEffect(() => {
     let interval: any = null;
 
     if (isActive && startTime) {
       interval = setInterval(() => {
-        // Вычисляем, сколько прошло времени с момента старта
         const now = Date.now();
         const diff = Math.floor((now - startTime) / 1000);
         setSeconds(diff >= 0 ? diff : 0);
       }, 1000);
-    } else if (!isActive && startTime === null) {
-      // Сброс
-      setSeconds(0);
-    }
+    } 
+    // УБРАЛИ БЛОК "else", который сбрасывал время в 0.
+    // Теперь сброс происходит только если прилетит статус "idle" из первого useEffect.
 
     return () => clearInterval(interval);
   }, [isActive, startTime]);
@@ -54,7 +59,6 @@ const Timer = ({ roomId }: { roomId: string }) => {
   // --- ФУНКЦИИ УПРАВЛЕНИЯ ---
 
   const startTimer = async () => {
-    // Записываем в базу текущее время сервера (клиента) как точку отсчета
     const roomRef = doc(firestore, "rooms", roomId);
     await updateDoc(roomRef, {
       timer: {
@@ -66,13 +70,12 @@ const Timer = ({ roomId }: { roomId: string }) => {
   };
 
   const stopTimer = async () => {
-    // Фиксируем текущее значение
     const roomRef = doc(firestore, "rooms", roomId);
     await updateDoc(roomRef, {
       timer: {
         status: "stopped",
-        startTime: null, // Сбрасываем старт, чтобы не тикало
-        elapsed: seconds // Сохраняем результат
+        startTime: null,
+        elapsed: seconds // Сохраняем то, что натикало
       }
     });
   };
@@ -81,14 +84,13 @@ const Timer = ({ roomId }: { roomId: string }) => {
     const roomRef = doc(firestore, "rooms", roomId);
     await updateDoc(roomRef, {
       timer: {
-        status: "idle",
+        status: "idle", // Новый статус для полного сброса
         startTime: null,
         elapsed: 0
       }
     });
   };
 
-  // Форматирование времени (MM:SS)
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
