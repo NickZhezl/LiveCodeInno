@@ -9,7 +9,18 @@ const outDir = resolve(__dirname, "dist");
 export default defineConfig({
   root,
   plugins: [react()],
-  
+  // ВАЖНО: Блок server должен быть здесь!
+  server: {
+  host: true,
+  proxy: {
+    "/api/piston": {
+      target: "http://localhost:2000",
+      changeOrigin: true,
+      rewrite: (path) => path.replace(/^\/api\/piston/, ""),
+    },
+  },
+},
+
   optimizeDeps: {
     exclude: ['@electric-sql/pglite']
   },
