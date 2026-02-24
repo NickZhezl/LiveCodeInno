@@ -18,8 +18,13 @@ export default defineConfig({
       changeOrigin: true,
       rewrite: (path) => path.replace(/^\/api\/piston/, ""),
     },
+    "/yjs": {
+      target: "ws://127.0.0.1:8000",
+      ws: true,
+    },
   },
 },
+
 
   optimizeDeps: {
     exclude: ['@electric-sql/pglite']
