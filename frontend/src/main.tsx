@@ -6,8 +6,8 @@ import theme from "./theme";
 
 // 1. Импорты Firebase
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore"; // <-- Добавили это
+// import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 // 2. Ваша НОВАЯ конфигурация
 const firebaseConfig = {
@@ -25,7 +25,7 @@ const app = initializeApp(firebaseConfig);
 
 // Экспортируем firestore, чтобы его видели другие файлы
 export const firestore = getFirestore(app); 
-export const analytics = getAnalytics(app);
+// export const analytics = getAnalytics(app);
 
 console.log("Firebase initialized for: Live Code project");
 
@@ -33,6 +33,7 @@ const rootElement = document.getElementById("root");
 
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
+  console.log("before render");
   root.render(
     <React.StrictMode>
       <ChakraProvider theme={theme}>
@@ -40,6 +41,7 @@ if (rootElement) {
       </ChakraProvider>
     </React.StrictMode>
   );
+  console.log("after render call");
 } else {
   console.error("Root element not found");
 }

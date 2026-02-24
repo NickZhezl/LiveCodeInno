@@ -10,26 +10,16 @@ function App() {
 
   return (
     <Box minH="100vh" bg="#0f0a19" color="gray.500" px={6} py={0}>
-      
-      {/* 1. Экран входа */}
       {!userID && <UserInput setUserID={setUserID} setRoomID={setRoomID} />}
 
-      {/* 2. Основной экран (только если вошли) */}
       {userID && roomID && (
         <Box>
-            {/* Передаем ID и имя для курсоров */}
-            <CodeEditor roomId={roomID} userName={userID} />
+          <CodeEditor roomId={roomID} userName={userID} />
         </Box>
       )}
 
-      {/* 3. Кнопка копирования ссылки */}
       {roomID && userID && (
-        <Box
-          style={{ marginTop: 20 }}
-          position="relative"
-          borderRadius="full"
-          p={4}
-        >
+        <Box style={{ marginTop: 20 }} position="relative" borderRadius="full" p={4}>
           <Button
             sx={{
               color: "#ffffff",
@@ -37,7 +27,7 @@ function App() {
               _hover: { bg: "rgba(255,255,255, 0.2)" },
             }}
             onClick={() => {
-              const roomURL = `${window.location.origin}/index.html?roomId=${roomID}`;
+              const roomURL = `${window.location.origin}/?roomId=${roomID}`;
               navigator.clipboard.writeText(roomURL);
               toast({ status: "success", title: "Link copied!" });
             }}

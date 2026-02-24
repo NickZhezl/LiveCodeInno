@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Box, HStack, Button, useToast, Text, Select, VStack } from "@chakra-ui/react";
 import { Editor } from "@monaco-editor/react";
-import { CODE_SNIPPETS } from "../constants";
 import Output from "./Output";
 import Timer from "./Timer";
 import type { editor as MonacoEditorNS } from "monaco-editor";
@@ -307,7 +306,23 @@ const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) 
 
       const output = (result.run.stdout ?? "").trim();
       const expected = (problem.expectedOutput ?? "").trim();
-
+      const roomRef = doc(firestore, "rooms", roomId);
+      await setDoc(
+        roomRef,
+        {
+          lastRun: {
+            by: userName,
+            problemId: currentProblemId,
+            language: problem.language,
+            output,
+            expected,
+            ok: output === expected,
+            stderr: result.run.stderr ?? "",
+            updatedAt: serverTimestamp(),
+          },
+        },
+        { merge: true }
+      );
       if (output === expected) {
         toast({
           title: "Верно!",
@@ -343,7 +358,12 @@ const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) 
     editor.focus();
 
     const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(`ws://${location.host}/yjs`, roomId, ydoc);
+    const YWS_URL = "ws://localhost:1234"; 
+    const provider = new WebsocketProvider(
+      YWS_URL,
+      roomId,     
+      ydoc
+    );
 
     const ytext = ydoc.getText("monaco");
     const model = editor.getModel();
@@ -621,7 +641,7 @@ const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) 
           />
         </Box>
 
-        <Output editorRef={editorRef} language={language} />
+        <Output roomId={roomId} userName={userName} editorRef={editorRef} language={language} />
       </HStack>
     </Box>
   );
