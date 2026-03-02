@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { Box, Button, useToast } from "@chakra-ui/react";
 import UserInput from "./components/UserInput";
 import CodeEditor from "./components/CodeEditor";
-import { doc, getDoc } from "firebase/firestore";
-import { firestore } from "./main";
+import { getRoom } from "./api/client";
 
 function App() {
   const [userID, setUserID] = useState<string | null>(null);
@@ -14,14 +13,13 @@ function App() {
   // Load room language when room is joined
   useEffect(() => {
     if (roomID) {
-      getDoc(doc(firestore, "rooms", roomID)).then((docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data?.language) {
-            setRoomLanguage(data.language);
-          }
+      getRoom(roomID).then((data) => {
+        if (data?.language) {
+          setRoomLanguage(data.language);
         }
-      }).catch(console.error);
+      }).catch(() => {
+        // Room doesn't exist yet
+      });
     }
   }, [roomID]);
 

@@ -15,17 +15,11 @@ import {
   Button,
 } from "@chakra-ui/react";
 import { StarIcon, TimeIcon } from "@chakra-ui/icons";
-import {
-  collection,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
-} from "firebase/firestore";
-import { firestore } from "../main";
+import { getLeaderboard } from "../api/client";
 
 interface LeaderboardEntry {
-  id: string;
+  id: number;
+  room_id: string;
   userName: string;
   problemId: string;
   problemTitle: string;
@@ -69,26 +63,23 @@ export const Leaderboard = ({ roomId, currentProblemId }: LeaderboardProps) => {
   useEffect(() => {
     if (!roomId) return;
 
-    const leaderboardRef = collection(firestore, `rooms/${roomId}/leaderboard`);
-    const q = query(
-      leaderboardRef,
-      orderBy("timeSeconds", "asc"),
-      limit(10)
-    );
+    // Fetch leaderboard from API
+    const fetchLeaderboard = async () => {
+      try {
+        const data = await getLeaderboard(roomId, filterMode === "current" ? currentProblemId : undefined);
+        setEntries(data);
+      } catch (error) {
+        console.error("Failed to fetch leaderboard:", error);
+      }
+    };
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const results: LeaderboardEntry[] = [];
-      snapshot.forEach((doc) => {
-        results.push({
-          id: doc.id,
-          ...doc.data(),
-        } as LeaderboardEntry);
-      });
-      setEntries(results);
-    });
-
-    return () => unsubscribe();
-  }, [roomId]);
+    fetchLeaderboard();
+    
+    // Poll for updates every 5 seconds
+    const interval = setInterval(fetchLeaderboard, 5000);
+    
+    return () => clearInterval(interval);
+  }, [roomId, filterMode, currentProblemId]);
 
   // Filter by current problem if selected
   const filteredEntries =

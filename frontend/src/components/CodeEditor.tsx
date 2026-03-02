@@ -29,20 +29,15 @@ import { Leaderboard } from "./Leaderboard";
 import { useProblemTimer } from "../hooks/useProblemTimer";
 import type { editor as MonacoEditorNS } from "monaco-editor";
 import type { OnMount } from "@monaco-editor/react";
-import { firestore } from "../main";
-import {
-  doc,
-  setDoc,
-  onSnapshot,
-  collection,
-  serverTimestamp,
-  deleteDoc,
-} from "firebase/firestore";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
 import { runPython } from "../py/pyodideRunner";
 import { PGlite } from "@electric-sql/pglite";
+import {
+  createRoomWebSocket,
+  saveCodeVersion,
+} from "../api/client";
 
 // ---------- helpers ----------
 const stringToColor = (str: string) => {
@@ -490,6 +485,7 @@ const CodeEditor = ({
   const yBindingRef = useRef<MonacoBinding | null>(null);
   const editorRef = useRef<MonacoEditorNS.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<any>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   const [language, _setLanguage] = useState(roomLanguage || "python");
   const [currentProblemId, setCurrentProblemId] = useState<string>("");
@@ -499,6 +495,9 @@ const CodeEditor = ({
   const [activeFileId, setActiveFileId] = useState<string>("");
   const [newFileName, setNewFileName] = useState("");
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Remote cursors state
+  const [remoteCursors, setRemoteCursors] = useState<Map<string, any>>(new Map());
 
   const decorationIds = useRef<string[]>([]);
   const toast = useToast();
@@ -511,6 +510,32 @@ const CodeEditor = ({
     userName,
     problemId: currentProblemId,
   });
+
+  // Handle WebSocket messages
+  const handleWebSocketMessage = (msg: any) => {
+    switch (msg.type) {
+      case "cursor.update":
+        if (msg.user_name !== userName) {
+          setRemoteCursors((prev) => {
+            const next = new Map(prev);
+            next.set(msg.user_name, msg);
+            return next;
+          });
+        }
+        break;
+      case "room.joined":
+        console.log("User joined room");
+        break;
+      case "room.left":
+        console.log("User left room");
+        break;
+      case "leaderboard.updated":
+        // Leaderboard was updated, refresh will happen via polling in Leaderboard component
+        break;
+      default:
+        break;
+    }
+  };
 
   // Filter problems by room language
   const filteredProblems = PROBLEMS.filter(
@@ -599,9 +624,6 @@ const CodeEditor = ({
           problem.language === "postgresql" ? "sql" : problem.language
         );
       }
-
-      const roomRef = doc(firestore, "rooms", roomId);
-      setDoc(roomRef, { language: problem.language }, { merge: true });
     } else {
       setCurrentProblemId("");
     }
@@ -653,28 +675,21 @@ const CodeEditor = ({
       const isCorrect = normalizedOutput === normalizedExpected;
       
       if (isCorrect) {
-        // Record solve time to leaderboard
+        // Record solve time to leaderboard via API
         await recordSolve(problem.title, problem.language);
-      }
-      
-      const roomRef = doc(firestore, "rooms", roomId);
-      await setDoc(
-        roomRef,
-        {
-          lastRun: {
-            by: userName,
-            problemId: currentProblemId,
+        
+        // Also send via WebSocket for real-time update
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: "leaderboard.submit",
+            user_name: userName,
+            problem_id: currentProblemId,
+            problem_title: problem.title,
+            time_seconds: elapsedTime,
             language: problem.language,
-            output: normalizedOutput,
-            expected: normalizedExpected,
-            ok: isCorrect,
-            stderr: result.run.stderr ?? "",
-            timeSeconds: isCorrect ? elapsedTime : null,
-            updatedAt: serverTimestamp(),
-          },
-        },
-        { merge: true }
-      );
+          }));
+        }
+      }
       if (isCorrect) {
         toast({
           title: "Верно!",
@@ -709,8 +724,9 @@ const CodeEditor = ({
     monacoRef.current = monacoInstance;
     editor.focus();
 
+    // Initialize Yjs for collaborative editing
     const ydoc = new Y.Doc();
-    const YWS_URL = "ws://localhost:1234";
+    const YWS_URL = `ws://${window.location.hostname}:8000/yjs`;
     const provider = new WebsocketProvider(YWS_URL, roomId, ydoc);
 
     const ytext = ydoc.getText("monaco");
@@ -726,23 +742,40 @@ const CodeEditor = ({
       yProviderRef.current = provider;
       yBindingRef.current = binding;
     }
+
+    // Initialize room WebSocket for real-time messages
+    const ws = createRoomWebSocket(roomId);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("Connected to room:", roomId);
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      handleWebSocketMessage(msg);
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    ws.onclose = () => {
+      console.log("Disconnected from room");
+    };
+
     // курсор
     editor.onDidChangeCursorPosition((e) => {
       const position = e.position;
-      if (!roomId || !userName) return;
+      if (!roomId || !userName || !wsRef.current) return;
 
-      const cursorRef = doc(firestore, `rooms/${roomId}/cursors/${userName}`);
-      setDoc(
-        cursorRef,
-        {
-          userName,
-          color: stringToColor(userName),
-          lineNumber: position.lineNumber,
-          column: position.column,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      ).catch(console.error);
+      wsRef.current.send(JSON.stringify({
+        type: "cursor.update",
+        user_name: userName,
+        line_number: position.lineNumber,
+        column: position.column,
+        color: stringToColor(userName),
+      }));
     });
 
     // python подсказки
@@ -827,66 +860,64 @@ const CodeEditor = ({
   useEffect(() => {
     if (!roomId) return;
 
-    const cursorsCollection = collection(
-      firestore,
-      `rooms/${roomId}/cursors`
-    );
-    const unsubscribe = onSnapshot(cursorsCollection, (snapshot) => {
-      const m = monacoRef.current;
-      const ed = editorRef.current;
-      if (!ed || !m) return;
+    const m = monacoRef.current;
+    const ed = editorRef.current;
+    if (!ed || !m) return;
 
-      const newDecorations: any[] = [];
-      const cssRules: string[] = [];
+    const newDecorations: any[] = [];
+    const cssRules: string[] = [];
 
-      snapshot.forEach((d) => {
-        const data: any = d.data();
-        if (data.userName === userName) return;
+    remoteCursors.forEach((data) => {
+      if (data.user_name === userName) return;
 
-        const safeUserName = String(data.userName).replace(/[^a-zA-Z0-9]/g, "");
-        const cursorClass = `remote-cursor-${safeUserName}`;
+      const safeUserName = String(data.user_name).replace(/[^a-zA-Z0-9]/g, "");
+      const cursorClass = `remote-cursor-${safeUserName}`;
 
-        cssRules.push(`
-          .${cursorClass} { position: absolute; border-left: 2px solid ${data.color}; height: 20px !important; display: block; z-index: 100; pointer-events: none; }
-          .${cursorClass}::after { content: "${data.userName}"; position: absolute; top: -18px; left: 0; background: ${data.color}; color: #fff; font-size: 10px; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
-        `);
+      cssRules.push(`
+        .${cursorClass} { position: absolute; border-left: 2px solid ${data.color}; height: 20px !important; display: block; z-index: 100; pointer-events: none; }
+        .${cursorClass}::after { content: "${data.user_name}"; position: absolute; top: -18px; left: 0; background: ${data.color}; color: #fff; font-size: 10px; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
+      `);
 
-        newDecorations.push({
-          range: new m.Range(
-            data.lineNumber,
-            data.column,
-            data.lineNumber,
-            data.column
-          ),
-          options: {
-            className: cursorClass,
-            stickiness:
-              m.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-            isWholeLine: false,
-          },
-        });
+      newDecorations.push({
+        range: new m.Range(
+          data.line_number,
+          data.column,
+          data.line_number,
+          data.column
+        ),
+        options: {
+          className: cursorClass,
+          stickiness:
+            m.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+          isWholeLine: false,
+        },
       });
-
-      let styleElement = document.getElementById(`cursors-styles-${roomId}`);
-      if (!styleElement) {
-        styleElement = document.createElement("style");
-        styleElement.id = `cursors-styles-${roomId}`;
-        document.head.appendChild(styleElement);
-      }
-      styleElement.innerHTML = cssRules.join("\n");
-
-      decorationIds.current = ed.deltaDecorations(
-        decorationIds.current,
-        newDecorations
-      );
     });
 
-    return () => unsubscribe();
-  }, [roomId, userName, files]);
+    let styleElement = document.getElementById(`cursors-styles-${roomId}`);
+    if (!styleElement) {
+      styleElement = document.createElement("style");
+      styleElement.id = `cursors-styles-${roomId}`;
+      document.head.appendChild(styleElement);
+    }
+    styleElement.innerHTML = cssRules.join("\n");
+
+    decorationIds.current = ed.deltaDecorations(
+      decorationIds.current,
+      newDecorations
+    );
+  }, [roomId, userName, remoteCursors, files]);
 
   // --- синхронизация кода ---
   useEffect(() => {
     return () => {
+      // Cleanup WebSocket
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      
+      // Cleanup Yjs
       try {
         yBindingRef.current?.destroy();
       } catch {}
@@ -902,58 +933,19 @@ const CodeEditor = ({
     };
   }, [roomId]);
 
-  // Cleanup cursor on unmount (page close/navigation)
-  useEffect(() => {
-    const cleanupCursor = async () => {
-      if (roomId && userName) {
-        try {
-          const cursorRef = doc(firestore, `rooms/${roomId}/cursors/${userName}`);
-          await deleteDoc(cursorRef);
-        } catch (error) {
-          console.error("Error cleaning up cursor:", error);
-        }
-      }
-    };
-
-    // Handle page close / refresh
-    const handleBeforeUnload = () => {
-      cleanupCursor();
-    };
-
-    // Handle visibility change (tab switch/minimize)
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab is hidden - could remove cursor or mark as inactive
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      cleanupCursor();
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [roomId, userName]);
+  // Cursor cleanup is handled automatically by WebSocket disconnect
 
   async function saveCode() {
     const code = activeFile?.content ?? "";
     if (!code.trim()) return;
 
-    const docData = {
-      code,
-      language,
-      fileName: activeFile?.name,
-      timestamp: new Date(),
-    };
-    const docReference = doc(
-      firestore,
-      `codes/${roomId}/versions/${Date.now()}`
-    );
-
     try {
-      await setDoc(docReference, docData);
+      await saveCodeVersion(roomId, {
+        file_name: activeFile?.name,
+        code,
+        language,
+        saved_by: userName,
+      });
       toast({ title: "Code saved.", status: "success", duration: 3000, isClosable: true });
     } catch (error) {
       toast({ title: "Error saving code.", status: "error", duration: 3000, isClosable: true });
@@ -1045,7 +1037,7 @@ const CodeEditor = ({
                       {language.toUpperCase()}
                     </Text>
                   </Box>
-                  <Timer roomId={roomId} />
+                  <Timer />
                 </HStack>
 
                 <HStack spacing={2}>
@@ -1134,9 +1126,6 @@ const CodeEditor = ({
 
         <Output
           roomId={roomId}
-          userName={userName}
-          editorRef={editorRef}
-          language={language}
         />
       </HStack>
         </GridItem>

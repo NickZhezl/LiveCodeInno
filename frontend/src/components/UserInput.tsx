@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 // Добавили Text в импорты для заголовка
 import { Input, Button, Select, Text, Box } from "@chakra-ui/react";
 import styles from "../styles/buttons.module.css";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { firestore } from "../main";
-import { LANGUAGE_VERSIONS } from "../constants";
+import { createRoom, getRoom } from "../api/client";
 
 const UserInput = ({ setUserID, setRoomID }: any) => {
   const [inputValue, setInputValue] = useState("");
@@ -18,15 +16,14 @@ const UserInput = ({ setUserID, setRoomID }: any) => {
     if (urlRoomId) {
        setInputRoomID(urlRoomId.toString());
        // Load existing room language
-       getDoc(doc(firestore, "rooms", urlRoomId)).then((docSnap) => {
-         if (docSnap.exists()) {
-           const data = docSnap.data();
-           if (data?.language) {
-             setExistingRoomLanguage(data.language);
-             setLanguage(data.language);
-           }
+       getRoom(urlRoomId).then((data) => {
+         if (data?.language) {
+           setExistingRoomLanguage(data.language);
+           setLanguage(data.language);
          }
-       }).catch(console.error);
+       }).catch(() => {
+         // Room doesn't exist yet, will be created on start
+       });
     }
   }, []);
 
@@ -49,10 +46,15 @@ const UserInput = ({ setUserID, setRoomID }: any) => {
     if (!roomID) return;
 
     try {
-      const roomRef = doc(firestore, "rooms", roomID);
-      await setDoc(roomRef, { language: language }, { merge: true });
+      if (existingRoomLanguage) {
+        // Room exists, just use it
+        await getRoom(roomID);
+      } else {
+        // Create new room
+        await createRoom(roomID, language);
+      }
     } catch (error) {
-      console.error("Error saving language preference:", error);
+      console.error("Error with room:", error);
     }
 
     setUserID(inputValue);
@@ -104,32 +106,26 @@ const UserInput = ({ setUserID, setRoomID }: any) => {
               {existingRoomLanguage.toUpperCase()}
             </Box>
           ) : (
-            // Select for new room creation
+            // Select for new room creation - only Python and SQL
             <Select
               className={styles.defaultInputs}
               width="auto"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              // --- СТИЛИЗАЦИЯ ПОД ТЕМНУЮ ТЕМУ ---
-              bg="#1a1a2e"       // Темный фон (как у инпутов)
-              color="white"      // Белый текст
-              borderColor="#333" // Темная рамка
+              bg="#1a1a2e"
+              color="white"
+              borderColor="#333"
               cursor="pointer"
               sx={{
-                // Стили для самого выпадающего списка опций (внутри браузера)
                 option: {
                   background: "#1a1a2e",
                   color: "white",
                 },
-                // Убираем синюю обводку при фокусе
                 _focus: { borderColor: "#6c5ce7", boxShadow: "0 0 0 1px #6c5ce7" }
               }}
             >
-              {Object.entries(LANGUAGE_VERSIONS).map(([lang, version]) => (
-                <option key={lang} value={lang}>
-                  {lang.toUpperCase()} ({version as string})
-                </option>
-              ))}
+              <option value="python">PYTHON</option>
+              <option value="postgresql">SQL (PostgreSQL)</option>
             </Select>
           )}
         </Box>

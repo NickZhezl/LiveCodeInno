@@ -10,8 +10,7 @@ import getSummary from "../services/reportGetSummary";
 import CollapsibleText from "../components/CollapsibleText";
 import ReportActionItemComponent from "../components/ReportActionItemComponent";
 import styles from "../styles/reportHeader.module.css";
-import { firestore } from "../main";
-import { collection, getDocs } from "firebase/firestore";
+import { getCodeVersions } from "../api/client";
 
 const InterviewReportComponent = () => {
   const [recordId, setRecordId] = useState<string | null>(null);
@@ -80,12 +79,7 @@ const InterviewReportComponent = () => {
     async function getCodes(room_id: string) {
       console.log("Requesting codes...");
       try {
-        const collectionReference = collection(
-          firestore,
-          `codes/${room_id}/versions`
-        );
-        const querySnapshot = await getDocs(collectionReference);
-        const codesData = querySnapshot.docs.map((doc) => doc.data());
+        const codesData = await getCodeVersions(room_id);
         setCodes(codesData);
         setCodesStatus("success");
         console.log("Codes data:", codesData);

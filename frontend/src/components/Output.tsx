@@ -1,148 +1,76 @@
-import { useState } from "react";
-import { Box, Button, Text, useToast, Spinner } from "@chakra-ui/react";
-import { executeCode } from "../api";
-import { useEffect } from "react";
-import { doc, onSnapshot, setDoc, serverTimestamp } from "firebase/firestore";
-import { firestore } from "../main";
+import { useState, useEffect, useRef } from "react";
+import { Box, Text, VStack } from "@chakra-ui/react";
 
-const Output = ({
-  roomId,
-  userName,
-  editorRef,
-  language,
-}: {
-  roomId: string;
-  userName: string;
-  editorRef: any;
-  language: string;
-}) => {
-  const [output, setOutput] = useState<string[] | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setIsError] = useState(false);
-  const toast = useToast();
-  const [syncedRun, setSyncedRun] = useState<any>(null);
+const Output = ({ roomId }: { roomId: string }) => {
+  const [output, setOutput] = useState<string[]>([]);
+  const [errorOutput, setErrorOutput] = useState<string[]>([]);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-  if (!roomId) return;
+    if (!roomId) return;
 
-  const roomRef = doc(firestore, "rooms", roomId);
-  const unsub = onSnapshot(roomRef, (snap) => {
-    const data: any = snap.data();
-    if (data?.lastRun) setSyncedRun(data.lastRun);
-  });
+    // Connect to room WebSocket
+    const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/rooms/${roomId}`);
+    wsRef.current = ws;
 
-  return () => unsub();
-}, [roomId]);
+    ws.onopen = () => {
+      console.log("Output connected to room:", roomId);
+    };
 
-  const runCode = async () => {
-    const sourceCode = editorRef.current?.getValue?.() ?? "";
-    if (!sourceCode.trim()) return;
-
-    try {
-      setIsLoading(true);
-      setOutput([]);
-      setIsError(false);
-
-      const result = await executeCode(language, sourceCode);
-
-      const outText = (result?.run?.output ?? "").toString();
-      await setDoc(
-        doc(firestore, "rooms", roomId),
-        {
-          lastRun: {
-            by: userName,
-            language,
-            output: outText ?? "",
-            stderr: result?.run?.stderr ? String(result.run.stderr) : "",
-            ok: !result?.run?.stderr,
-            updatedAt: serverTimestamp(),
-          },
-        },
-        { merge: true }
-      );
-      const outputLines = outText ? outText.split("\n") : [];
-
-      if (result?.run?.stderr) {
-        setIsError(true);
-        const errorLines = String(result.run.stderr).split("\n");
-        setOutput([...outputLines, ...errorLines].filter(Boolean));
-      } else {
-        setIsError(false);
-        setOutput(outputLines);
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      
+      if (msg.type === "run.stdout") {
+        setOutput((prev) => [...prev, msg.chunk]);
+      } else if (msg.type === "run.stderr") {
+        setErrorOutput((prev) => [...prev, msg.chunk]);
       }
-    } catch (error: any) {
-      setIsError(true);
-      setOutput([error?.message || "Unknown error occurred"]);
+    };
 
-      toast({
-        title: "Execution failed",
-        status: "error",
-        duration: 3000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    ws.onerror = (error) => {
+      console.error("Output WebSocket error:", error);
+    };
+
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [roomId]);
 
   return (
-    <Box w="50%">
-      <Text mb={2} fontSize="lg" color="white">
+    <Box
+      w="50%"
+      h="70vh"
+      bg="#1a1a2e"
+      borderRadius="md"
+      p={4}
+      border="1px solid"
+      borderColor="gray.700"
+      overflowY="auto"
+    >
+      <Text color="teal.400" fontSize="lg" fontWeight="bold" mb={4}>
         Output
       </Text>
 
-      <Button
-        variant="outline"
-        colorScheme="green"
-        mb={4}
-        isLoading={isLoading}
-        onClick={runCode}
-        _hover={{ bg: "rgba(72, 187, 120, 0.1)" }}
-      >
-        Run Code
-      </Button>
-
-      <Box
-        height="75vh"
-        p={3}
-        border="1px solid"
-        borderRadius={4}
-        borderColor={isError ? "red.500" : "#333"}
-        bg="#1e1e1e"
-        overflowY="auto"
-      >
-        {isLoading ? (
-          <Spinner color="blue.500" />
-        ) : syncedRun ? (
-          // 🔥 синхронизированный вывод из Firestore
-          String(syncedRun.stderr || syncedRun.output)
-            .split("\n")
-            .filter(Boolean)
-            .map((line: string, i: number) => (
-              <Text
-                key={i}
-                color={syncedRun.stderr ? "red.400" : "white"}
-                fontFamily="monospace"
-                whiteSpace="pre-wrap"
-              >
-                {line}
-              </Text>
-            ))
-        ) : output ? (
-          // локальный вывод (fallback)
-          output.map((line, i) => (
-            <Text
-              key={i}
-              color={isError ? "red.400" : "white"}
-              fontFamily="monospace"
-              whiteSpace="pre-wrap"
-            >
+      {output.length === 0 && errorOutput.length === 0 ? (
+        <Text color="gray.500" fontSize="sm">
+          Run code to see output...
+        </Text>
+      ) : (
+        <VStack align="stretch" spacing={2}>
+          {output.map((line, i) => (
+            <Text key={`out-${i}`} color="gray.300" fontSize="sm" fontFamily="mono">
               {line}
             </Text>
-          ))
-        ) : (
-          <Text color="gray.500">Click "Run Code" to see the output here</Text>
-        )}
-      </Box>
+          ))}
+          {errorOutput.map((line, i) => (
+            <Text key={`err-${i}`} color="red.400" fontSize="sm" fontFamily="mono">
+              {line}
+            </Text>
+          ))}
+        </VStack>
+      )}
     </Box>
   );
 };
