@@ -9,8 +9,10 @@ const Output = ({ roomId }: { roomId: string }) => {
   useEffect(() => {
     if (!roomId) return;
 
-    // Connect to room WebSocket
-    const ws = new WebSocket(`ws://${window.location.hostname}:8000/api/ws/rooms/${roomId}`);
+    // Connect to room WebSocket for output
+    const wsUrl = `ws://${window.location.hostname}:8000/api/ws/rooms/${roomId}`;
+    console.log("Connecting to WebSocket:", wsUrl);
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {

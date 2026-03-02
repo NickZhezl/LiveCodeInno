@@ -726,6 +726,7 @@ const CodeEditor = ({
 
     // Initialize Yjs for collaborative editing
     const ydoc = new Y.Doc();
+    // Use backend WebSocket for Yjs
     const YWS_URL = `ws://${window.location.hostname}:8000/yjs`;
     const provider = new WebsocketProvider(YWS_URL, roomId, ydoc);
 
