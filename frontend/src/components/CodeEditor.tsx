@@ -394,7 +394,7 @@ const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) 
 
     // python подсказки
     monacoInstance.languages.registerCompletionItemProvider("python", {
-      provideCompletionItems: (model, position) => {
+      provideCompletionItems: (model: any, position: any) => {
         const word = model.getWordUntilPosition(position);
         const range = {
           startLineNumber: position.lineNumber,
@@ -426,7 +426,7 @@ const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) 
 
     // sql подсказки (для monaco "sql" режима)
     monacoInstance.languages.registerCompletionItemProvider("sql", {
-      provideCompletionItems: (model, position) => {
+      provideCompletionItems: (model: any, position: any) => {
         const word = model.getWordUntilPosition(position);
         const range = {
           startLineNumber: position.lineNumber,

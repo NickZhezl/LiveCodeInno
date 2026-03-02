@@ -16,12 +16,12 @@ async function getPyodide() {
 export async function runPython(code: string) {
   const py = await getPyodide();
 
-  // перехват stdout/stderr
-  py.setStdout({ batched: (s) => (stdout += s) });
-  py.setStderr({ batched: (s) => (stderr += s) });
-
   let stdout = "";
   let stderr = "";
+
+  // перехват stdout/stderr
+  py.setStdout({ batched: (s: string) => { stdout += s; } });
+  py.setStderr({ batched: (s: string) => { stderr += s; } });
 
   try {
     await py.runPythonAsync(code);
