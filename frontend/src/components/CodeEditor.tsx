@@ -18,11 +18,15 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
+  Grid,
+  GridItem,
 } from "@chakra-ui/react";
 import { AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { Editor } from "@monaco-editor/react";
 import Output from "./Output";
 import Timer from "./Timer";
+import { Leaderboard } from "./Leaderboard";
+import { useProblemTimer } from "../hooks/useProblemTimer";
 import type { editor as MonacoEditorNS } from "monaco-editor";
 import type { OnMount } from "@monaco-editor/react";
 import { firestore } from "../main";
@@ -501,6 +505,13 @@ const CodeEditor = ({
 
   const [isChecking, setIsChecking] = useState(false);
 
+  // Per-problem timer hook
+  const { elapsedTime, recordSolve } = useProblemTimer({
+    roomId,
+    userName,
+    problemId: currentProblemId,
+  });
+
   // Filter problems by room language
   const filteredProblems = PROBLEMS.filter(
     (p) => !roomLanguage || p.language === roomLanguage
@@ -633,6 +644,12 @@ const CodeEditor = ({
 
       const output = (result.run.stdout ?? "").trim();
       const expected = (problem.expectedOutput ?? "").trim();
+      
+      if (output === expected) {
+        // Record solve time to leaderboard
+        await recordSolve(problem.title, problem.language);
+      }
+      
       const roomRef = doc(firestore, "rooms", roomId);
       await setDoc(
         roomRef,
@@ -645,6 +662,7 @@ const CodeEditor = ({
             expected,
             ok: output === expected,
             stderr: result.run.stderr ?? "",
+            timeSeconds: output === expected ? elapsedTime : null,
             updatedAt: serverTimestamp(),
           },
         },
@@ -653,7 +671,7 @@ const CodeEditor = ({
       if (output === expected) {
         toast({
           title: "Верно!",
-          description: "Все тесты пройдены успешно.",
+          description: `Все тесты пройдены успешно! Время: ${Math.floor(elapsedTime / 60)}:${(elapsedTime % 60).toString().padStart(2, "0")}`,
           status: "success",
           duration: 3000,
         });
@@ -944,100 +962,111 @@ const CodeEditor = ({
 
   return (
     <Box>
-      <VStack align="stretch" mb={6} spacing={3}>
-        <HStack justify="space-between">
-          <Select
-            placeholder="Выберите задачу из списка..."
-            bg="gray.800"
-            color="white"
-            borderColor="gray.600"
-            onChange={handleProblemSelect}
-            value={currentProblemId}
-            maxW="70%"
-            sx={{
-              "> option": {
-                background: "#2D3748",
-                color: "white",
-              },
-            }}
-          >
-            {filteredProblems.map((prob) => (
-              <option
-                key={prob.id}
-                value={prob.id}
-                style={{ backgroundColor: "#2D3748", color: "white" }}
+      <Grid templateColumns="2fr 1fr" gap={6}>
+        <GridItem>
+          <VStack align="stretch" mb={6} spacing={3}>
+            <HStack justify="space-between">
+              <Select
+                placeholder="Выберите задачу из списка..."
+                bg="gray.800"
+                color="white"
+                borderColor="gray.600"
+                onChange={handleProblemSelect}
+                value={currentProblemId}
+                maxW="70%"
+                sx={{
+                  "> option": {
+                    background: "#2D3748",
+                    color: "white",
+                  },
+                }}
               >
-                {prob.title}
-              </option>
-            ))}
-          </Select>
+                {filteredProblems.map((prob) => (
+                  <option
+                    key={prob.id}
+                    value={prob.id}
+                    style={{ backgroundColor: "#2D3748", color: "white" }}
+                  >
+                    {prob.title}
+                  </option>
+                ))}
+              </Select>
 
-          <Button
-            colorScheme="green"
-            onClick={checkSolution}
-            isDisabled={!currentProblemId}
-            isLoading={isChecking}
-            loadingText="Проверка..."
-          >
-            Проверить решение
-          </Button>
-        </HStack>
+              <Button
+                colorScheme="green"
+                onClick={checkSolution}
+                isDisabled={!currentProblemId}
+                isLoading={isChecking}
+                loadingText="Проверка..."
+              >
+                Проверить решение
+              </Button>
+            </HStack>
 
-        {currentProblemId && (
-          <Box
-            p={3}
-            bg="gray.700"
-            borderRadius="md"
-            borderLeft="4px solid teal"
-          >
-            <Text color="gray.200" fontSize="md">
-              {PROBLEMS.find((p) => p.id === currentProblemId)?.description}
-            </Text>
-          </Box>
-        )}
-      </VStack>
-
-      <HStack spacing={4} align="flex-start">
-        <Box w="50%">
-          <HStack justify="space-between" mb={4} alignItems="center">
-            <HStack spacing={6}>
-              <Box ml={2}>
-                <Text color="gray.400" fontSize="sm">
-                  Language:
-                </Text>
-                <Text color="white" fontSize="xl" fontWeight="bold">
-                  {language.toUpperCase()}
-                </Text>
+            {currentProblemId && (
+              <Box
+                p={3}
+                bg="gray.700"
+                borderRadius="md"
+                borderLeft="4px solid teal"
+              >
+                <HStack justify="space-between">
+                  <Text color="gray.200" fontSize="md">
+                    {PROBLEMS.find((p) => p.id === currentProblemId)?.description}
+                  </Text>
+                  {currentProblemId && (
+                    <Box bg="teal.600" px={3} py={1} borderRadius="md">
+                      <Text color="white" fontSize="sm" fontFamily="mono">
+                        ⏱ {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, "0")}
+                      </Text>
+                    </Box>
+                  )}
+                </HStack>
               </Box>
-              <Timer roomId={roomId} />
-            </HStack>
+            )}
+          </VStack>
 
-            <HStack spacing={2}>
-              <Button
-                leftIcon={<AddIcon />}
-                size="sm"
-                onClick={onOpen}
-                sx={{
-                  color: "#ffffff",
-                  bg: "rgba(255,255,255, 0.1)",
-                  _hover: { bg: "rgba(255,255,255, 0.2)" },
-                }}
-              >
-                New File
-              </Button>
-              <Button
-                sx={{
-                  color: "#ffffff",
-                  fontSize: "1rem",
-                  borderRadius: "6px",
-                  _hover: { bg: "rgba(248,248,255, 0.3)" },
-                }}
-                onClick={saveCode}
-              >
-                Save Code
-              </Button>
-            </HStack>
-          </HStack>
+          <HStack spacing={4} align="flex-start">
+            <Box w="100%">
+              <HStack justify="space-between" mb={4} alignItems="center">
+                <HStack spacing={6}>
+                  <Box ml={2}>
+                    <Text color="gray.400" fontSize="sm">
+                      Language:
+                    </Text>
+                    <Text color="white" fontSize="xl" fontWeight="bold">
+                      {language.toUpperCase()}
+                    </Text>
+                  </Box>
+                  <Timer roomId={roomId} />
+                </HStack>
+
+                <HStack spacing={2}>
+                  <Button
+                    leftIcon={<AddIcon />}
+                    size="sm"
+                    onClick={onOpen}
+                    sx={{
+                      color: "#ffffff",
+                      bg: "rgba(255,255,255, 0.1)",
+                      _hover: { bg: "rgba(255,255,255, 0.2)" },
+                    }}
+                  >
+                    New File
+                  </Button>
+                  <Button
+                    sx={{
+                      color: "#ffffff",
+                      fontSize: "1rem",
+                      borderRadius: "6px",
+                      _hover: { bg: "rgba(248,248,255, 0.3)" },
+                    }}
+                    onClick={saveCode}
+                  >
+                    Save Code
+                  </Button>
+                </HStack>
+              </HStack>
 
           {/* File tabs */}
           <HStack spacing={2} mb={2} flexWrap="wrap">
@@ -1103,6 +1132,13 @@ const CodeEditor = ({
           language={language}
         />
       </HStack>
+        </GridItem>
+
+        {/* Leaderboard Sidebar */}
+        <GridItem>
+          <Leaderboard roomId={roomId} currentProblemId={currentProblemId || undefined} />
+        </GridItem>
+      </Grid>
 
       {/* New File Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>
