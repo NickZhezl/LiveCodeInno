@@ -1,12 +1,39 @@
 import { useRef, useState, useEffect } from "react";
-import { Box, HStack, Button, useToast, Text, Select, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  HStack,
+  Button,
+  useToast,
+  Text,
+  Select,
+  VStack,
+  Input,
+  IconButton,
+  Flex,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+} from "@chakra-ui/react";
+import { AddIcon, CloseIcon } from "@chakra-ui/icons";
 import { Editor } from "@monaco-editor/react";
 import Output from "./Output";
 import Timer from "./Timer";
 import type { editor as MonacoEditorNS } from "monaco-editor";
 import type { OnMount } from "@monaco-editor/react";
 import { firestore } from "../main";
-import { doc, setDoc, onSnapshot, collection, serverTimestamp } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  onSnapshot,
+  collection,
+  serverTimestamp,
+  deleteDoc,
+} from "firebase/firestore";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { MonacoBinding } from "y-monaco";
@@ -16,12 +43,30 @@ import { PGlite } from "@electric-sql/pglite";
 // ---------- helpers ----------
 const stringToColor = (str: string) => {
   let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < str.length; i++)
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
   const c = (hash & 0x00ffffff).toString(16).toUpperCase();
   return "#" + "00000".substring(0, 6 - c.length) + c;
 };
 
-let savedCodeCode = 0;
+// File interface
+interface EditorFile {
+  id: string;
+  name: string;
+  content: string;
+  language: string;
+}
+
+// Generate unique file ID
+const generateFileId = () => {
+  return `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Get default file extension based on language
+const getFileExtension = (language: string) => {
+  if (language === "postgresql") return "sql";
+  return language;
+};
 
 // =========================
 // PROBLEMS
@@ -234,7 +279,8 @@ INSERT INTO employees VALUES (2, 'Bob', 40000);
     id: "sql-where",
     title: "Salary Above 50k (SQL)",
     language: "postgresql",
-    description: "Select names (name) of employees with salary greater than 50000.",
+    description:
+      "Select names (name) of employees with salary greater than 50000.",
     starterCode: `SELECT ...`,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
@@ -249,7 +295,8 @@ INSERT INTO employees VALUES (3, 'Charlie', 55000);
     id: "sql-count-rows",
     title: "Count Employees (SQL)",
     language: "postgresql",
-    description: "Count the number of rows in the employees table. Output a single number.",
+    description:
+      "Count the number of rows in the employees table. Output a single number.",
     starterCode: `SELECT ...;`,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
@@ -425,15 +472,29 @@ async function executeCodeLocal(language: string, sourceCode: string) {
 // =========================
 // COMPONENT
 // =========================
-const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userName: string; roomLanguage?: string }) => {
+const CodeEditor = ({
+  roomId,
+  userName,
+  roomLanguage,
+}: {
+  roomId: string;
+  userName: string;
+  roomLanguage?: string;
+}) => {
   const ydocRef = useRef<Y.Doc | null>(null);
   const yProviderRef = useRef<WebsocketProvider | null>(null);
   const yBindingRef = useRef<MonacoBinding | null>(null);
   const editorRef = useRef<MonacoEditorNS.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<any>(null);
 
-  const [language, setLanguage] = useState(roomLanguage || "python");
+  const [language, _setLanguage] = useState(roomLanguage || "python");
   const [currentProblemId, setCurrentProblemId] = useState<string>("");
+
+  // Multiple files state
+  const [files, setFiles] = useState<EditorFile[]>([]);
+  const [activeFileId, setActiveFileId] = useState<string>("");
+  const [newFileName, setNewFileName] = useState("");
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
   const decorationIds = useRef<string[]>([]);
   const toast = useToast();
@@ -445,18 +506,87 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
     (p) => !roomLanguage || p.language === roomLanguage
   );
 
+  // Initialize with default file
+  useEffect(() => {
+    if (roomLanguage && files.length === 0) {
+      const ext = getFileExtension(roomLanguage);
+      const defaultFile: EditorFile = {
+        id: generateFileId(),
+        name: `main.${ext}`,
+        content: "",
+        language: roomLanguage,
+      };
+      setFiles([defaultFile]);
+      setActiveFileId(defaultFile.id);
+    }
+  }, [roomLanguage]);
+
+  // Get active file
+  const activeFile = files.find((f) => f.id === activeFileId);
+
+  // Update active file content
+  const updateActiveFileContent = (content: string) => {
+    setFiles((prev) =>
+      prev.map((f) => (f.id === activeFileId ? { ...f, content } : f))
+    );
+  };
+
+  // Add new file
+  const handleAddFile = () => {
+    if (!newFileName.trim()) return;
+
+    const ext = getFileExtension(language);
+    const fileName = newFileName.trim().endsWith(`.${ext}`)
+      ? newFileName.trim()
+      : `${newFileName.trim()}.${ext}`;
+
+    const newFile: EditorFile = {
+      id: generateFileId(),
+      name: fileName,
+      content: "",
+      language,
+    };
+
+    setFiles((prev) => [...prev, newFile]);
+    setActiveFileId(newFile.id);
+    setNewFileName("");
+    onClose();
+  };
+
+  // Remove file
+  const handleRemoveFile = (fileId: string) => {
+    if (files.length <= 1) {
+      toast({
+        title: "Cannot remove last file",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
+
+    const newFiles = files.filter((f) => f.id !== fileId);
+    setFiles(newFiles);
+
+    if (activeFileId === fileId) {
+      setActiveFileId(newFiles[0].id);
+    }
+  };
+
   const handleProblemSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const probId = e.target.value;
     const problem = PROBLEMS.find((p) => p.id === probId);
 
     if (problem) {
       setCurrentProblemId(probId);
-      editorRef.current?.setValue(problem.starterCode);
-      setLanguage(problem.language);
+      // Set starter code in active file
+      updateActiveFileContent(problem.starterCode);
       const m = monacoRef.current;
       const model = editorRef.current?.getModel();
       if (m && model) {
-        m.editor.setModelLanguage(model, problem.language === "postgresql" ? "sql" : problem.language);
+        m.editor.setModelLanguage(
+          model,
+          problem.language === "postgresql" ? "sql" : problem.language
+        );
       }
 
       const roomRef = doc(firestore, "rooms", roomId);
@@ -476,7 +606,7 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
     setIsChecking(true);
 
     // --- подготовка кода ---
-    const codeFromEditor = editorRef.current?.getValue() ?? "";
+    const codeFromEditor = activeFile?.content ?? "";
     let codeToRun = codeFromEditor;
 
     if (problem.language === "python") {
@@ -555,17 +685,18 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
     editor.focus();
 
     const ydoc = new Y.Doc();
-    const YWS_URL = "ws://localhost:1234"; 
-    const provider = new WebsocketProvider(
-      YWS_URL,
-      roomId,     
-      ydoc
-    );
+    const YWS_URL = "ws://localhost:1234";
+    const provider = new WebsocketProvider(YWS_URL, roomId, ydoc);
 
     const ytext = ydoc.getText("monaco");
     const model = editor.getModel();
     if (model) {
-      const binding = new MonacoBinding(ytext, model, new Set([editor]), provider.awareness);
+      const binding = new MonacoBinding(
+        ytext,
+        model,
+        new Set([editor]),
+        provider.awareness
+      );
       ydocRef.current = ydoc;
       yProviderRef.current = provider;
       yBindingRef.current = binding;
@@ -606,14 +737,19 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
               label: "print",
               kind: monacoInstance.languages.CompletionItemKind.Function,
               insertText: "print(${1:value})",
-              insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules:
+                monacoInstance.languages.CompletionItemInsertTextRule
+                  .InsertAsSnippet,
               range,
             },
             {
               label: "def",
               kind: monacoInstance.languages.CompletionItemKind.Keyword,
-              insertText: "def ${1:func_name}(${2:args}):\n\t${3:pass}",
-              insertTextRules: monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertText:
+                "def ${1:func_name}(${2:args}):\n\t${3:pass}",
+              insertTextRules:
+                monacoInstance.languages.CompletionItemInsertTextRule
+                  .InsertAsSnippet,
               range,
             },
           ],
@@ -664,52 +800,64 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
 
   // --- курсоры других пользователей ---
   useEffect(() => {
-  if (!roomId) return;
+    if (!roomId) return;
 
-  const cursorsCollection = collection(firestore, `rooms/${roomId}/cursors`);
-  const unsubscribe = onSnapshot(cursorsCollection, (snapshot) => {
-    const m = monacoRef.current;
-    const ed = editorRef.current;
-    if (!ed || !m) return;
+    const cursorsCollection = collection(
+      firestore,
+      `rooms/${roomId}/cursors`
+    );
+    const unsubscribe = onSnapshot(cursorsCollection, (snapshot) => {
+      const m = monacoRef.current;
+      const ed = editorRef.current;
+      if (!ed || !m) return;
 
-    const newDecorations: any[] = [];
-    const cssRules: string[] = [];
+      const newDecorations: any[] = [];
+      const cssRules: string[] = [];
 
-    snapshot.forEach((d) => {
-      const data: any = d.data();
-      if (data.userName === userName) return;
+      snapshot.forEach((d) => {
+        const data: any = d.data();
+        if (data.userName === userName) return;
 
-      const safeUserName = String(data.userName).replace(/[^a-zA-Z0-9]/g, "");
-      const cursorClass = `remote-cursor-${safeUserName}`;
+        const safeUserName = String(data.userName).replace(/[^a-zA-Z0-9]/g, "");
+        const cursorClass = `remote-cursor-${safeUserName}`;
 
-      cssRules.push(`
-        .${cursorClass} { position: absolute; border-left: 2px solid ${data.color}; height: 20px !important; display: block; z-index: 100; pointer-events: none; }
-        .${cursorClass}::after { content: "${data.userName}"; position: absolute; top: -18px; left: 0; background: ${data.color}; color: #fff; font-size: 10px; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
-      `);
+        cssRules.push(`
+          .${cursorClass} { position: absolute; border-left: 2px solid ${data.color}; height: 20px !important; display: block; z-index: 100; pointer-events: none; }
+          .${cursorClass}::after { content: "${data.userName}"; position: absolute; top: -18px; left: 0; background: ${data.color}; color: #fff; font-size: 10px; padding: 2px 4px; border-radius: 3px; white-space: nowrap; }
+        `);
 
-      newDecorations.push({
-        range: new m.Range(data.lineNumber, data.column, data.lineNumber, data.column),
-        options: {
-          className: cursorClass,
-          stickiness: m.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-          isWholeLine: false,
-        },
+        newDecorations.push({
+          range: new m.Range(
+            data.lineNumber,
+            data.column,
+            data.lineNumber,
+            data.column
+          ),
+          options: {
+            className: cursorClass,
+            stickiness:
+              m.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+            isWholeLine: false,
+          },
+        });
       });
+
+      let styleElement = document.getElementById(`cursors-styles-${roomId}`);
+      if (!styleElement) {
+        styleElement = document.createElement("style");
+        styleElement.id = `cursors-styles-${roomId}`;
+        document.head.appendChild(styleElement);
+      }
+      styleElement.innerHTML = cssRules.join("\n");
+
+      decorationIds.current = ed.deltaDecorations(
+        decorationIds.current,
+        newDecorations
+      );
     });
 
-    let styleElement = document.getElementById(`cursors-styles-${roomId}`);
-    if (!styleElement) {
-      styleElement = document.createElement("style");
-      styleElement.id = `cursors-styles-${roomId}`;
-      document.head.appendChild(styleElement);
-    }
-    styleElement.innerHTML = cssRules.join("\n");
-
-    decorationIds.current = ed.deltaDecorations(decorationIds.current, newDecorations);
-  });
-
-  return () => unsubscribe();
-}, [roomId, userName]);
+    return () => unsubscribe();
+  }, [roomId, userName, files]);
 
   // --- синхронизация кода ---
   useEffect(() => {
@@ -729,12 +877,55 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
     };
   }, [roomId]);
 
+  // Cleanup cursor on unmount (page close/navigation)
+  useEffect(() => {
+    const cleanupCursor = async () => {
+      if (roomId && userName) {
+        try {
+          const cursorRef = doc(firestore, `rooms/${roomId}/cursors/${userName}`);
+          await deleteDoc(cursorRef);
+        } catch (error) {
+          console.error("Error cleaning up cursor:", error);
+        }
+      }
+    };
+
+    // Handle page close / refresh
+    const handleBeforeUnload = () => {
+      cleanupCursor();
+    };
+
+    // Handle visibility change (tab switch/minimize)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab is hidden - could remove cursor or mark as inactive
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      cleanupCursor();
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [roomId, userName]);
+
   async function saveCode() {
-    const code = editorRef.current?.getValue() ?? "";
+    const code = activeFile?.content ?? "";
     if (!code.trim()) return;
 
-    const docData = { code, language, timestamp: new Date() };
-    const docReference = doc(firestore, `codes/${roomId}/versions/${savedCodeCode++}`);
+    const docData = {
+      code,
+      language,
+      fileName: activeFile?.name,
+      timestamp: new Date(),
+    };
+    const docReference = doc(
+      firestore,
+      `codes/${roomId}/versions/${Date.now()}`
+    );
 
     try {
       await setDoc(docReference, docData);
@@ -743,6 +934,13 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
       toast({ title: "Error saving code.", status: "error", duration: 3000, isClosable: true });
     }
   }
+
+  // Handle editor content change
+  const handleEditorChange = (value: string | undefined) => {
+    if (value !== undefined) {
+      updateActiveFileContent(value);
+    }
+  };
 
   return (
     <Box>
@@ -764,7 +962,11 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
             }}
           >
             {filteredProblems.map((prob) => (
-              <option key={prob.id} value={prob.id} style={{ backgroundColor: "#2D3748", color: "white" }}>
+              <option
+                key={prob.id}
+                value={prob.id}
+                style={{ backgroundColor: "#2D3748", color: "white" }}
+              >
                 {prob.title}
               </option>
             ))}
@@ -782,7 +984,12 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
         </HStack>
 
         {currentProblemId && (
-          <Box p={3} bg="gray.700" borderRadius="md" borderLeft="4px solid teal">
+          <Box
+            p={3}
+            bg="gray.700"
+            borderRadius="md"
+            borderLeft="4px solid teal"
+          >
             <Text color="gray.200" fontSize="md">
               {PROBLEMS.find((p) => p.id === currentProblemId)?.description}
             </Text>
@@ -805,17 +1012,67 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
               <Timer roomId={roomId} />
             </HStack>
 
-            <Button
-              sx={{
-                color: "#ffffff",
-                fontSize: "1rem",
-                borderRadius: "6px",
-                _hover: { bg: "rgba(248,248,255, 0.3)" },
-              }}
-              onClick={saveCode}
-            >
-              Save Code
-            </Button>
+            <HStack spacing={2}>
+              <Button
+                leftIcon={<AddIcon />}
+                size="sm"
+                onClick={onOpen}
+                sx={{
+                  color: "#ffffff",
+                  bg: "rgba(255,255,255, 0.1)",
+                  _hover: { bg: "rgba(255,255,255, 0.2)" },
+                }}
+              >
+                New File
+              </Button>
+              <Button
+                sx={{
+                  color: "#ffffff",
+                  fontSize: "1rem",
+                  borderRadius: "6px",
+                  _hover: { bg: "rgba(248,248,255, 0.3)" },
+                }}
+                onClick={saveCode}
+              >
+                Save Code
+              </Button>
+            </HStack>
+          </HStack>
+
+          {/* File tabs */}
+          <HStack spacing={2} mb={2} flexWrap="wrap">
+            {files.map((file) => (
+              <Flex
+                key={file.id}
+                align="center"
+                px={3}
+                py={1}
+                borderRadius="md"
+                bg={activeFileId === file.id ? "teal.600" : "gray.700"}
+                color="white"
+                cursor="pointer"
+                onClick={() => setActiveFileId(file.id)}
+                _hover={{ bg: activeFileId === file.id ? "teal.500" : "gray.600" }}
+              >
+                <Text fontSize="sm" mr={2}>
+                  {file.name}
+                </Text>
+                {files.length > 1 && (
+                  <IconButton
+                    aria-label="Remove file"
+                    icon={<CloseIcon w={2} h={2} />}
+                    size="xs"
+                    variant="ghost"
+                    colorScheme="red"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile(file.id);
+                    }}
+                    ml={1}
+                  />
+                )}
+              </Flex>
+            ))}
           </HStack>
 
           <Editor
@@ -833,13 +1090,51 @@ const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userNa
             height="70vh"
             theme="vs-dark"
             language={language === "postgresql" ? "sql" : language}
-            defaultValue=""
+            value={activeFile?.content || ""}
+            onChange={handleEditorChange}
             onMount={onMount}
           />
         </Box>
 
-        <Output roomId={roomId} userName={userName} editorRef={editorRef} language={language} />
+        <Output
+          roomId={roomId}
+          userName={userName}
+          editorRef={editorRef}
+          language={language}
+        />
       </HStack>
+
+      {/* New File Modal */}
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent bg="gray.800">
+          <ModalHeader color="white">Create New File</ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody>
+            <Input
+              placeholder={`filename.${getFileExtension(language)}`}
+              value={newFileName}
+              onChange={(e) => setNewFileName(e.target.value)}
+              bg="gray.700"
+              color="white"
+              borderColor="gray.600"
+              _placeholder={{ color: "gray.400" }}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onClose} color="white">
+              Cancel
+            </Button>
+            <Button
+              colorScheme="teal"
+              onClick={handleAddFile}
+              isDisabled={!newFileName.trim()}
+            >
+              Create
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
