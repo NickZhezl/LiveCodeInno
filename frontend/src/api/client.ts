@@ -1,11 +1,17 @@
 // API client for FastAPI backend
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8000/api";
+// Use relative URLs for Vercel deployment
+const API_BASE = typeof window !== 'undefined' 
+  ? window.location.origin + '/api'
+  : 'http://localhost:8000/api';
+
+const WS_BASE = typeof window !== 'undefined'
+  ? (window.location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + window.location.host + '/api'
+  : 'ws://localhost:8000/api';
 
 // ============== ROOMS ==============
 
 export async function createRoom(roomId: string, language: string) {
-  const response = await fetch(`${API_URL}/rooms`, {
+  const response = await fetch(`${API_BASE}/rooms`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id: roomId, language }),
@@ -15,13 +21,13 @@ export async function createRoom(roomId: string, language: string) {
 }
 
 export async function getRoom(roomId: string) {
-  const response = await fetch(`${API_URL}/rooms/${roomId}`);
+  const response = await fetch(`${API_BASE}/rooms/${roomId}`);
   if (!response.ok) throw new Error("Room not found");
   return response.json();
 }
 
 export async function updateRoomLanguage(roomId: string, language: string) {
-  const response = await fetch(`${API_URL}/rooms/${roomId}?language=${encodeURIComponent(language)}`, {
+  const response = await fetch(`${API_BASE}/rooms/${roomId}?language=${encodeURIComponent(language)}`, {
     method: "PUT",
   });
   if (!response.ok) throw new Error("Failed to update room");
@@ -40,7 +46,7 @@ export async function submitLeaderboardEntry(
     language: string;
   }
 ) {
-  const response = await fetch(`${API_URL}/rooms/${roomId}/leaderboard`, {
+  const response = await fetch(`${API_BASE}/rooms/${roomId}/leaderboard`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(entry),
@@ -53,7 +59,7 @@ export async function getLeaderboard(roomId: string, problemId?: string, limit =
   const params = new URLSearchParams({ limit: limit.toString() });
   if (problemId) params.set("problem_id", problemId);
   
-  const response = await fetch(`${API_URL}/rooms/${roomId}/leaderboard?${params}`);
+  const response = await fetch(`${API_BASE}/rooms/${roomId}/leaderboard?${params}`);
   if (!response.ok) throw new Error("Failed to fetch leaderboard");
   return response.json();
 }
@@ -69,7 +75,7 @@ export async function saveCodeVersion(
     saved_by?: string;
   }
 ) {
-  const response = await fetch(`${API_URL}/rooms/${roomId}/code`, {
+  const response = await fetch(`${API_BASE}/rooms/${roomId}/code`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(version),
@@ -79,7 +85,7 @@ export async function saveCodeVersion(
 }
 
 export async function getCodeVersions(roomId: string, limit = 20) {
-  const response = await fetch(`${API_URL}/rooms/${roomId}/code?limit=${limit}`);
+  const response = await fetch(`${API_BASE}/rooms/${roomId}/code?limit=${limit}`);
   if (!response.ok) throw new Error("Failed to fetch code versions");
   return response.json();
 }
@@ -87,21 +93,21 @@ export async function getCodeVersions(roomId: string, limit = 20) {
 // ============== WEBSOCKET ==============
 
 export function createRoomWebSocket(roomId: string) {
-  const ws = new WebSocket(`${WS_URL}/ws/rooms/${roomId}`);
+  const ws = new WebSocket(`${WS_BASE}/ws/rooms/${roomId}`);
   return ws;
 }
 
 export function createYjsWebSocket(roomId: string) {
-  const ws = new WebSocket(`ws://${window.location.hostname}:8000/yjs/${roomId}`);
+  const ws = new WebSocket(`${WS_BASE}/yjs/${roomId}`);
   return ws;
 }
 
 // ============== UTILS ==============
 
 export function getApiUrl() {
-  return API_URL;
+  return API_BASE;
 }
 
 export function getWsUrl() {
-  return WS_URL;
+  return WS_BASE;
 }
