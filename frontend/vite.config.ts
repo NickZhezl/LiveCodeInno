@@ -48,6 +48,8 @@ export default defineConfig({
     nodePolyfills({
       protocolImports: true,
       globals: { Buffer: true, global: true, process: true },
+      // Exclude pyodide from polyfill processing
+      exclude: ["process"],
     }),
 
     {
@@ -78,15 +80,40 @@ export default defineConfig({
       },
     },
 
+    {
+      name: "pyodide-external",
+      resolveId(source) {
+        // Mark pyodide as external to load from CDN at runtime
+        if (source === "pyodide" || source.startsWith("pyodide/")) {
+          return { id: source, external: true };
+        }
+        return null;
+      },
+      renderChunk(code) {
+        // Replace any remaining pyodide imports with CDN reference
+        return code.replace(
+          /import\s*\{\s*([^}]+)\s*\}\s*from\s*["']pyodide["']/g,
+          "// Pyodide loaded from CDN"
+        );
+      },
+    },
+
     react(),
   ],
   build: {
     rollupOptions: {
-      external: [
-        "pyodide",
-        /^pyodide\//,
-        "vite-plugin-node-polyfills/shims/process",
-      ],
+      output: {
+        manualChunks: {
+          // Separate large dependencies
+          pglite: ["@electric-sql/pglite"],
+        },
+      },
     },
+    // Increase chunk size warning limit for pglite
+    chunkSizeWarningLimit: 6000,
+  },
+  // Define global variables for polyfills
+  define: {
+    global: "globalThis",
   },
 });
