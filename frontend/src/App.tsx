@@ -1,12 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, Button, useToast } from "@chakra-ui/react";
 import UserInput from "./components/UserInput";
 import CodeEditor from "./components/CodeEditor";
+import { doc, getDoc } from "firebase/firestore";
+import { firestore } from "./main";
 
 function App() {
   const [userID, setUserID] = useState<string | null>(null);
   const [roomID, setRoomID] = useState<string | null>(null);
+  const [roomLanguage, setRoomLanguage] = useState<string | null>(null);
   const toast = useToast();
+
+  // Load room language when room is joined
+  useEffect(() => {
+    if (roomID) {
+      getDoc(doc(firestore, "rooms", roomID)).then((docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data?.language) {
+            setRoomLanguage(data.language);
+          }
+        }
+      }).catch(console.error);
+    }
+  }, [roomID]);
 
   return (
     <Box minH="100vh" bg="#0f0a19" color="gray.500" px={6} py={0}>
@@ -14,7 +31,7 @@ function App() {
 
       {userID && roomID && (
         <Box>
-          <CodeEditor roomId={roomID} userName={userID} />
+          <CodeEditor roomId={roomID} userName={userID} roomLanguage={roomLanguage || undefined} />
         </Box>
       )}
 

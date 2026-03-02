@@ -30,26 +30,26 @@ export const PROBLEMS = [
   // --- PYTHON ---
   {
     id: "py-palindrome",
-    title: "Проверка палиндрома (Python)",
+    title: "Palindrome Check (Python)",
     language: "python",
     description:
-      "Напишите функцию is_palindrome(text), которая возвращает True, если строка читается одинаково в обе стороны.",
+      "Write a function is_palindrome(text) that returns True if the string reads the same forwards and backwards.",
     starterCode: `def is_palindrome(text):
-    # Ваш код здесь
+    # Your code here
     pass`,
     testWrapper: `
 print(is_palindrome('aba'))
 print(is_palindrome('abc'))
 `,
-    expectedOutput: "TrueFalse",
+    expectedOutput: "True\nFalse",
   },
   {
     id: "py-factorial",
-    title: "Факториал (Python)",
+    title: "Factorial (Python)",
     language: "python",
-    description: "Напишите рекурсивную функцию factorial(n).",
+    description: "Write a recursive function factorial(n).",
     starterCode: `def factorial(n):
-    # Ваш код здесь
+    # Your code here
     pass`,
     testWrapper: `
 print(factorial(0))
@@ -59,12 +59,12 @@ print(factorial(5))
   },
   {
     id: "py-normalize-email",
-    title: "Нормализация email (Python)",
+    title: "Email Normalization (Python)",
     language: "python",
     description:
-      "Напишите функцию normalize_email(email), которая убирает пробелы по краям и приводит строку к нижнему регистру.",
+      "Write a function normalize_email(email) that strips whitespace and converts to lowercase.",
     starterCode: `def normalize_email(email):
-    # Ваш код здесь
+    # Your code here
     pass`,
     testWrapper: `
 print(normalize_email('  Test@Example.COM '))
@@ -74,12 +74,12 @@ print(normalize_email('USER@MAIL.RU'))
   },
   {
     id: "py-parse-log-level",
-    title: "Уровень логов (Python)",
+    title: "Log Level Parser (Python)",
     language: "python",
     description:
-      "Напишите функцию extract_level(line), которая возвращает уровень лога (INFO/WARN/ERROR) из строки вида '[ERROR] msg'. Если уровня нет — верните 'UNKNOWN'.",
+      "Write a function extract_level(line) that returns the log level (INFO/WARN/ERROR) from a string like '[ERROR] msg'. Return 'UNKNOWN' if no level found.",
     starterCode: `def extract_level(line):
-    # Ваш код здесь
+    # Your code here
     pass`,
     testWrapper: `
 print(extract_level("[INFO] service started"))
@@ -90,12 +90,12 @@ print(extract_level("service started"))
   },
   {
     id: "py-filter-ints",
-    title: "Фильтрация чисел (Python)",
+    title: "Filter Positive Numbers (Python)",
     language: "python",
     description:
-      "Напишите функцию filter_positive(nums), которая возвращает список только положительных чисел (> 0).",
+      "Write a function filter_positive(nums) that returns a list of only positive numbers (> 0).",
     starterCode: `def filter_positive(nums):
-    # Ваш код здесь
+    # Your code here
     pass`,
     testWrapper: `
 print(filter_positive([0, -1, 2, 3, -5, 4]))
@@ -103,15 +103,124 @@ print(filter_positive([-10, 0, -2]))
 `,
     expectedOutput: "[2, 3, 4]\n[]",
   },
+  {
+    id: "py-fibonacci",
+    title: "Fibonacci Sequence (Python)",
+    language: "python",
+    description:
+      "Write a function fibonacci(n) that returns the nth Fibonacci number (0-indexed).",
+    starterCode: `def fibonacci(n):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(fibonacci(0))
+print(fibonacci(1))
+print(fibonacci(10))
+`,
+    expectedOutput: "0\n1\n55",
+  },
+  {
+    id: "py-count-vowels",
+    title: "Count Vowels (Python)",
+    language: "python",
+    description:
+      "Write a function count_vowels(text) that returns the number of vowels (a, e, i, o, u) in the string.",
+    starterCode: `def count_vowels(text):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(count_vowels('Hello World'))
+print(count_vowels('AEIOU'))
+print(count_vowels('xyz'))
+`,
+    expectedOutput: "3\n5\n0",
+  },
+  {
+    id: "py-reverse-string",
+    title: "Reverse String (Python)",
+    language: "python",
+    description:
+      "Write a function reverse_string(s) that returns the string reversed.",
+    starterCode: `def reverse_string(s):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(reverse_string('hello'))
+print(reverse_string('Python'))
+`,
+    expectedOutput: "olleh\nnohtyP",
+  },
+  {
+    id: "py-is-prime",
+    title: "Prime Number Check (Python)",
+    language: "python",
+    description:
+      "Write a function is_prime(n) that returns True if n is a prime number.",
+    starterCode: `def is_prime(n):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(is_prime(2))
+print(is_prime(17))
+print(is_prime(1))
+print(is_prime(20))
+`,
+    expectedOutput: "True\nTrue\nFalse\nFalse",
+  },
+  {
+    id: "py-flatten-list",
+    title: "Flatten Nested List (Python)",
+    language: "python",
+    description:
+      "Write a function flatten(nested_list) that flattens a nested list one level deep.",
+    starterCode: `def flatten(nested_list):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(flatten([[1, 2], [3, 4], [5]]))
+print(flatten([[], [1], [[2]]]))
+`,
+    expectedOutput: "[1, 2, 3, 4, 5]\n[1, [2]]",
+  },
+  {
+    id: "py-find-max",
+    title: "Find Maximum (Python)",
+    language: "python",
+    description:
+      "Write a function find_max(nums) that returns the maximum value in a list.",
+    starterCode: `def find_max(nums):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(find_max([1, 5, 3, 9, 2]))
+print(find_max([-1, -5, -3]))
+`,
+    expectedOutput: "9\n-1",
+  },
+  {
+    id: "py-remove-duplicates",
+    title: "Remove Duplicates (Python)",
+    language: "python",
+    description:
+      "Write a function remove_duplicates(items) that removes duplicate values while preserving order.",
+    starterCode: `def remove_duplicates(items):
+    # Your code here
+    pass`,
+    testWrapper: `
+print(remove_duplicates([1, 2, 2, 3, 1, 4]))
+print(remove_duplicates(['a', 'b', 'a', 'c']))
+`,
+    expectedOutput: "[1, 2, 3, 4]\n['a', 'b', 'c']",
+  },
 
   // --- SQL via PGlite (PostgreSQL) ---
   {
     id: "sql-select-all",
-    title: "Все сотрудники (SQL)",
+    title: "All Employees (SQL)",
     language: "postgresql",
     description:
-      "Выберите все столбцы из таблицы employees. (Таблица уже создана: id, name, salary)",
-    starterCode: `-- Напишите запрос ниже
+      "Select all columns from the employees table. (Table already created: id, name, salary)",
+    starterCode: `-- Write your query below
 `,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
@@ -123,9 +232,9 @@ INSERT INTO employees VALUES (2, 'Bob', 40000);
   },
   {
     id: "sql-where",
-    title: "Зарплата выше 50k (SQL)",
+    title: "Salary Above 50k (SQL)",
     language: "postgresql",
-    description: "Выберите имена (name) сотрудников, у которых зарплата больше 50000.",
+    description: "Select names (name) of employees with salary greater than 50000.",
     starterCode: `SELECT ...`,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
@@ -138,9 +247,9 @@ INSERT INTO employees VALUES (3, 'Charlie', 55000);
   },
   {
     id: "sql-count-rows",
-    title: "Количество сотрудников (SQL)",
+    title: "Count Employees (SQL)",
     language: "postgresql",
-    description: "Посчитайте количество строк в таблице employees. Выведите одно число.",
+    description: "Count the number of rows in the employees table. Output a single number.",
     starterCode: `SELECT ...;`,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
@@ -153,10 +262,10 @@ INSERT INTO employees VALUES (3, 'Charlie', 55000);
   },
   {
     id: "sql-order-by-salary",
-    title: "Сортировка по зарплате (SQL)",
+    title: "Sort by Salary (SQL)",
     language: "postgresql",
     description:
-      "Выведите name и salary из employees, отсортировав по salary по убыванию (DESC).",
+      "Select name and salary from employees, sorted by salary in descending order (DESC).",
     starterCode: `SELECT ...`,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
@@ -169,10 +278,10 @@ INSERT INTO employees VALUES (3, 'Charlie', 55000);
   },
   {
     id: "sql-group-by-dept",
-    title: "Группировка по отделам (SQL)",
+    title: "Group by Department (SQL)",
     language: "postgresql",
     description:
-      "Есть таблица employees (id, name, dept, salary). Выведите dept и среднюю зарплату (avg_salary) по отделам. Отсортируйте по dept.",
+      "There is a table employees (id, name, dept, salary). Select dept and average salary (avg_salary) by department. Sort by dept.",
     starterCode: `SELECT ...`,
     testWrapper: `
 CREATE TABLE employees (id INTEGER, name TEXT, dept TEXT, salary INTEGER);
@@ -183,6 +292,89 @@ INSERT INTO employees VALUES (4, 'Diana', 'HR', 45000);
 -- SEPARATOR --
 `,
     expectedOutput: "HR|42500\nIT|57500",
+  },
+  {
+    id: "sql-join-tables",
+    title: "JOIN Departments (SQL)",
+    language: "postgresql",
+    description:
+      "Join employees and departments tables. Select employee name and department name.",
+    starterCode: `SELECT ...`,
+    testWrapper: `
+CREATE TABLE departments (id INTEGER, name TEXT);
+INSERT INTO departments VALUES (1, 'Engineering');
+INSERT INTO departments VALUES (2, 'Sales');
+CREATE TABLE employees (id INTEGER, name TEXT, dept_id INTEGER);
+INSERT INTO employees VALUES (1, 'Alice', 1);
+INSERT INTO employees VALUES (2, 'Bob', 2);
+INSERT INTO employees VALUES (3, 'Charlie', 1);
+-- SEPARATOR --
+`,
+    expectedOutput: "Alice|Engineering\nBob|Sales\nCharlie|Engineering",
+  },
+  {
+    id: "sql-update-salary",
+    title: "Update Salary (SQL)",
+    language: "postgresql",
+    description:
+      "Give all employees a 10% raise. Update the salary column and select all rows.",
+    starterCode: `UPDATE ...`,
+    testWrapper: `
+CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
+INSERT INTO employees VALUES (1, 'Alice', 60000);
+INSERT INTO employees VALUES (2, 'Bob', 40000);
+-- SEPARATOR --
+`,
+    expectedOutput: "1|Alice|66000\n2|Bob|44000",
+  },
+  {
+    id: "sql-delete-records",
+    title: "Delete Records (SQL)",
+    language: "postgresql",
+    description:
+      "Delete all employees with salary less than 50000. Then select all remaining rows.",
+    starterCode: `DELETE ...`,
+    testWrapper: `
+CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
+INSERT INTO employees VALUES (1, 'Alice', 60000);
+INSERT INTO employees VALUES (2, 'Bob', 40000);
+INSERT INTO employees VALUES (3, 'Charlie', 55000);
+-- SEPARATOR --
+`,
+    expectedOutput: "1|Alice|60000\n3|Charlie|55000",
+  },
+  {
+    id: "sql-having-clause",
+    title: "HAVING Clause (SQL)",
+    language: "postgresql",
+    description:
+      "Select departments with more than 1 employee. Use GROUP BY and HAVING.",
+    starterCode: `SELECT ...`,
+    testWrapper: `
+CREATE TABLE employees (id INTEGER, name TEXT, dept TEXT);
+INSERT INTO employees VALUES (1, 'Alice', 'IT');
+INSERT INTO employees VALUES (2, 'Bob', 'HR');
+INSERT INTO employees VALUES (3, 'Charlie', 'IT');
+INSERT INTO employees VALUES (4, 'Diana', 'IT');
+-- SEPARATOR --
+`,
+    expectedOutput: "IT|3",
+  },
+  {
+    id: "sql-subquery",
+    title: "Subquery (SQL)",
+    language: "postgresql",
+    description:
+      "Select employees whose salary is above the average salary. Use a subquery.",
+    starterCode: `SELECT ...`,
+    testWrapper: `
+CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
+INSERT INTO employees VALUES (1, 'Alice', 60000);
+INSERT INTO employees VALUES (2, 'Bob', 40000);
+INSERT INTO employees VALUES (3, 'Charlie', 55000);
+-- SEPARATOR --
+`,
+    expectedOutput: "Alice",
   },
 ];
 
@@ -233,20 +425,25 @@ async function executeCodeLocal(language: string, sourceCode: string) {
 // =========================
 // COMPONENT
 // =========================
-const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) => {
+const CodeEditor = ({ roomId, userName, roomLanguage }: { roomId: string; userName: string; roomLanguage?: string }) => {
   const ydocRef = useRef<Y.Doc | null>(null);
   const yProviderRef = useRef<WebsocketProvider | null>(null);
   const yBindingRef = useRef<MonacoBinding | null>(null);
   const editorRef = useRef<MonacoEditorNS.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<any>(null);
 
-  const [language, setLanguage] = useState("python");
+  const [language, setLanguage] = useState(roomLanguage || "python");
   const [currentProblemId, setCurrentProblemId] = useState<string>("");
 
   const decorationIds = useRef<string[]>([]);
   const toast = useToast();
 
   const [isChecking, setIsChecking] = useState(false);
+
+  // Filter problems by room language
+  const filteredProblems = PROBLEMS.filter(
+    (p) => !roomLanguage || p.language === roomLanguage
+  );
 
   const handleProblemSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const probId = e.target.value;
@@ -566,7 +763,7 @@ const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) 
               },
             }}
           >
-            {PROBLEMS.map((prob) => (
+            {filteredProblems.map((prob) => (
               <option key={prob.id} value={prob.id} style={{ backgroundColor: "#2D3748", color: "white" }}>
                 {prob.title}
               </option>

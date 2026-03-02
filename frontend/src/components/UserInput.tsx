@@ -1,23 +1,32 @@
 import { useState, useEffect } from "react";
 // Добавили Text в импорты для заголовка
-import { Input, Button, Select, Text, Box } from "@chakra-ui/react"; 
+import { Input, Button, Select, Text, Box } from "@chakra-ui/react";
 import styles from "../styles/buttons.module.css";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { firestore } from "../main";
 import { LANGUAGE_VERSIONS } from "../constants";
 
 const UserInput = ({ setUserID, setRoomID }: any) => {
   const [inputValue, setInputValue] = useState("");
   const [roomID, setInputRoomID] = useState<string>("");
-  const [language, setLanguage] = useState("javascript");
+  const [language, setLanguage] = useState("python");
+  const [existingRoomLanguage, setExistingRoomLanguage] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlRoomId = params.get("roomId");
     if (urlRoomId) {
        setInputRoomID(urlRoomId.toString());
-       // Если комната из URL, можно сразу заполнить и roomID для генерации ссылки
-       // но setRoomID пока не вызываем, ждем нажатия Start
+       // Load existing room language
+       getDoc(doc(firestore, "rooms", urlRoomId)).then((docSnap) => {
+         if (docSnap.exists()) {
+           const data = docSnap.data();
+           if (data?.language) {
+             setExistingRoomLanguage(data.language);
+             setLanguage(data.language);
+           }
+         }
+       }).catch(console.error);
     }
   }, []);
 
@@ -79,34 +88,50 @@ const UserInput = ({ setUserID, setRoomID }: any) => {
         {/* Блок выбора языка */}
         <Box width="100%" mt={2}>
           <Text mb="8px" color="gray.400" fontSize="sm" textAlign="left">
-             Choose interview language:
+             {existingRoomLanguage ? "Room Language (locked):" : "Choose interview language:"}
           </Text>
-          <Select 
-            className={styles.defaultInputs}
-            width="auto"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            // --- СТИЛИЗАЦИЯ ПОД ТЕМНУЮ ТЕМУ ---
-            bg="#1a1a2e"       // Темный фон (как у инпутов)
-            color="white"      // Белый текст
-            borderColor="#333" // Темная рамка
-            cursor="pointer"
-            sx={{
-              // Стили для самого выпадающего списка опций (внутри браузера)
-              option: {
-                background: "#1a1a2e",
-                color: "white",
-              },
-              // Убираем синюю обводку при фокусе
-              _focus: { borderColor: "#6c5ce7", boxShadow: "0 0 0 1px #6c5ce7" } 
-            }}
-          >
-            {Object.entries(LANGUAGE_VERSIONS).map(([lang, version]) => (
-              <option key={lang} value={lang}>
-                {lang.toUpperCase()} ({version as string})
-              </option>
-            ))}
-          </Select>
+          {existingRoomLanguage ? (
+            // Static display for existing room language
+            <Box
+              bg="#1a1a2e"
+              color="white"
+              border="1px solid #333"
+              borderRadius="4px"
+              px={4}
+              py={2}
+              fontWeight="bold"
+            >
+              {existingRoomLanguage.toUpperCase()}
+            </Box>
+          ) : (
+            // Select for new room creation
+            <Select
+              className={styles.defaultInputs}
+              width="auto"
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              // --- СТИЛИЗАЦИЯ ПОД ТЕМНУЮ ТЕМУ ---
+              bg="#1a1a2e"       // Темный фон (как у инпутов)
+              color="white"      // Белый текст
+              borderColor="#333" // Темная рамка
+              cursor="pointer"
+              sx={{
+                // Стили для самого выпадающего списка опций (внутри браузера)
+                option: {
+                  background: "#1a1a2e",
+                  color: "white",
+                },
+                // Убираем синюю обводку при фокусе
+                _focus: { borderColor: "#6c5ce7", boxShadow: "0 0 0 1px #6c5ce7" }
+              }}
+            >
+              {Object.entries(LANGUAGE_VERSIONS).map(([lang, version]) => (
+                <option key={lang} value={lang}>
+                  {lang.toUpperCase()} ({version as string})
+                </option>
+              ))}
+            </Select>
+          )}
         </Box>
 
       </div>
