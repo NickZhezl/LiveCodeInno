@@ -45,14 +45,18 @@ export async function runPython(code: string) {
   let stdout = "";
   let stderr = "";
 
-  // перехват stdout/stderr
-  py.setStdout({ batched: (s: string) => { stdout += s; } });
+  // перехват stdout/stderr - pyodide добавляет \n к каждому выводу
+  py.setStdout({ batched: (s: string) => { 
+    // Python's print() добавляет \n, но pyodide может не включать его
+    stdout += s + "\n"; 
+  } });
   py.setStderr({ batched: (s: string) => { stderr += s; } });
 
   try {
     await py.runPythonAsync(code);
-    return { stdout, stderr };
+    // Удаляем последнюю новую строку если она есть
+    return { stdout: stdout.replace(/\n$/, ""), stderr };
   } catch (e: any) {
-    return { stdout, stderr: (stderr + (e?.message ?? String(e))).trim() };
+    return { stdout: stdout.replace(/\n$/, ""), stderr: (stderr + (e?.message ?? String(e))).trim() };
   }
 }

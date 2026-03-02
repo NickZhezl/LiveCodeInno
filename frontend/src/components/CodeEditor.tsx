@@ -645,7 +645,14 @@ const CodeEditor = ({
       const output = (result.run.stdout ?? "").trim();
       const expected = (problem.expectedOutput ?? "").trim();
       
-      if (output === expected) {
+      // Normalize output comparison - handle trailing/leading whitespace and line endings
+      const normalizeOutput = (str: string) => str.replace(/\r\n/g, "\n").trim();
+      const normalizedOutput = normalizeOutput(output);
+      const normalizedExpected = normalizeOutput(expected);
+      
+      const isCorrect = normalizedOutput === normalizedExpected;
+      
+      if (isCorrect) {
         // Record solve time to leaderboard
         await recordSolve(problem.title, problem.language);
       }
@@ -658,17 +665,17 @@ const CodeEditor = ({
             by: userName,
             problemId: currentProblemId,
             language: problem.language,
-            output,
-            expected,
-            ok: output === expected,
+            output: normalizedOutput,
+            expected: normalizedExpected,
+            ok: isCorrect,
             stderr: result.run.stderr ?? "",
-            timeSeconds: output === expected ? elapsedTime : null,
+            timeSeconds: isCorrect ? elapsedTime : null,
             updatedAt: serverTimestamp(),
           },
         },
         { merge: true }
       );
-      if (output === expected) {
+      if (isCorrect) {
         toast({
           title: "Верно!",
           description: `Все тесты пройдены успешно! Время: ${Math.floor(elapsedTime / 60)}:${(elapsedTime % 60).toString().padStart(2, "0")}`,
@@ -678,7 +685,7 @@ const CodeEditor = ({
       } else {
         toast({
           title: "Тесты не пройдены",
-          description: `Ожидалось:\n${expected}\n\nПолучено:\n${output}`,
+          description: `Ожидалось:\n${normalizedExpected}\n\nПолучено:\n${normalizedOutput}`,
           status: "error",
           duration: 6000,
           isClosable: true,
