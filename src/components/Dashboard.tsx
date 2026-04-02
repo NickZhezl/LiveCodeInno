@@ -22,7 +22,6 @@ import {
   FiLogOut,
 } from "react-icons/fi";
 import { useAuth } from "../contexts/AuthContext";
-import { PYTHON_TOPICS } from "../data/pythonTopics";
 
 interface DashboardProps {
   onNavigate: (section: string) => void;
@@ -44,19 +43,15 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
     onStartInterview(roomId);
   };
 
-  const stats = [
-    { label: "Тем по Python", value: PYTHON_TOPICS.length, color: "blue" },
-    { label: "Домашних заданий", value: 9, color: "green" },
-    { label: "Задач для практики", value: 11, color: "purple" },
-  ];
-
   const handleNavigateToMyHomework = () => {
     onNavigate("my-homework");
   };
 
-  const handleNavigateToSandbox = () => {
-    onNavigate("sandbox");
-  };
+  const stats = [
+    { label: "Тем по Python", value: 8, color: "green" },
+    { label: "Задач в банке", value: 11, color: "purple" },
+    { label: "Уровней", value: 8, color: "blue" },
+  ];
 
   return (
     <Box minH="100vh" bg="#0f0a19" color="gray.500" p={8}>
@@ -76,7 +71,7 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
               {userData?.role === "admin" ? "Admin" : "User"}
             </Badge>
             <Button
-              leftIcon={<FiLogOut />}
+              leftIcon={<Icon as={FiLogOut} />}
               onClick={logout}
               bg="rgba(255,255,255, 0.1)"
               color="white"
@@ -140,9 +135,9 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
           </HStack>
         </Card>
 
-        {/* Main Sections */}
-        <Heading fontSize="2xl" color="white" mt={8}>
-          Разделы
+        {/* Main Sections - Practice */}
+        <Heading fontSize="2xl" color="white" mt={8} mb={4}>
+          🛠️ Практика
         </Heading>
 
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
@@ -195,7 +190,7 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
             </CardBody>
           </Card>
 
-          {/* My Homework */}
+          {/* Индивидуальные задачи */}
           <Card
             bg="rgba(255, 255, 255, 0.05)"
             borderRadius="xl"
@@ -220,7 +215,7 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
                 </Box>
                 <VStack align="start" spacing={0}>
                   <Text fontSize="xl" fontWeight="bold" color="white">
-                    Мои ДЗ
+                    Индивидуальные задачи
                   </Text>
                   <Text fontSize="sm" color="gray.400">
                     Назначенные задания
@@ -238,110 +233,12 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
                 color="white"
                 _hover={{ bg: "orange.700" }}
               >
-                Смотреть ДЗ
+                Смотреть задачи
               </Button>
             </CardBody>
           </Card>
 
-          {/* Python Topics */}
-          <Card
-            bg="rgba(255, 255, 255, 0.05)"
-            borderRadius="xl"
-            p={6}
-            cursor="pointer"
-            _hover={{ bg: "rgba(255, 255, 255, 0.1)", transform: "translateY(-4px)" }}
-            transition="all 0.2s"
-            onClick={() => onNavigate("topics")}
-          >
-            <CardBody>
-              <HStack spacing={4} mb={4}>
-                <Box
-                  w={12}
-                  h={12}
-                  borderRadius="xl"
-                  bg="green.600"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Icon as={FiBook} w={6} h={6} color="white" />
-                </Box>
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="xl" fontWeight="bold" color="white">
-                    Темы Python
-                  </Text>
-                  <Text fontSize="sm" color="gray.400">
-                    Учебные материалы
-                  </Text>
-                </VStack>
-              </HStack>
-              <Divider borderColor="rgba(255,255,255,0.1)" my={4} />
-              <Text color="gray.400" fontSize="sm">
-                Изучите Python от основ до продвинутых тем: типы данных, функции,
-                классы, дескрипторы, метаклассы.
-              </Text>
-              <Button
-                mt={4}
-                w="full"
-                bg="green.600"
-                color="white"
-                _hover={{ bg: "green.700" }}
-              >
-                Изучать темы
-              </Button>
-            </CardBody>
-          </Card>
-
-          {/* Homework */}
-          <Card
-            bg="rgba(255, 255, 255, 0.05)"
-            borderRadius="xl"
-            p={6}
-            cursor="pointer"
-            _hover={{ bg: "rgba(255, 255, 255, 0.1)", transform: "translateY(-4px)" }}
-            transition="all 0.2s"
-            onClick={() => onNavigate("homework")}
-          >
-            <CardBody>
-              <HStack spacing={4} mb={4}>
-                <Box
-                  w={12}
-                  h={12}
-                  borderRadius="xl"
-                  bg="orange.600"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <Icon as={FiCheckSquare} w={6} h={6} color="white" />
-                </Box>
-                <VStack align="start" spacing={0}>
-                  <Text fontSize="xl" fontWeight="bold" color="white">
-                    Домашние задания
-                  </Text>
-                  <Text fontSize="sm" color="gray.400">
-                    С автоматической проверкой
-                  </Text>
-                </VStack>
-              </HStack>
-              <Divider borderColor="rgba(255,255,255,0.1)" my={4} />
-              <Text color="gray.400" fontSize="sm">
-                Практические задания с автоматической проверкой результатов.
-                От базовых тем к продвинутым.
-              </Text>
-              <Button
-                mt={4}
-                w="full"
-                bg="orange.600"
-                color="white"
-                _hover={{ bg: "orange.700" }}
-              >
-                Выполнить ДЗ
-              </Button>
-            </CardBody>
-          </Card>
-
-          {/* Problems Bank */}
+          {/* Банк задач */}
           <Card
             bg="rgba(255, 255, 255, 0.05)"
             borderRadius="xl"
@@ -398,7 +295,7 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
             cursor="pointer"
             _hover={{ bg: "rgba(255, 255, 255, 0.1)", transform: "translateY(-4px)" }}
             transition="all 0.2s"
-            onClick={handleNavigateToSandbox}
+            onClick={() => onNavigate("sandbox")}
           >
             <CardBody>
               <HStack spacing={4} mb={4}>
@@ -424,7 +321,7 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
               </HStack>
               <Divider borderColor="rgba(255,255,255,0.1)" my={4} />
               <Text color="gray.400" fontSize="sm">
-                Пишите и выполняйте любой Python код. Примеры кода, мгновенный результат, 100% локально.
+                Пишите и выполняйте любой Python код. Примеры кода, мгновенный результат.
               </Text>
               <Button
                 mt={4}
@@ -434,6 +331,62 @@ export default function Dashboard({ onNavigate, onStartInterview }: DashboardPro
                 _hover={{ bg: "green.700" }}
               >
                 Открыть песочницу
+              </Button>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
+
+        {/* Theory Section */}
+        <Heading fontSize="2xl" color="white" mt={8} mb={4}>
+          📚 Теория
+        </Heading>
+
+        <SimpleGrid columns={{ base: 1, md: 1 }} spacing={6}>
+          {/* Учебные материалы по Python */}
+          <Card
+            bg="rgba(255, 255, 255, 0.05)"
+            borderRadius="xl"
+            p={6}
+            cursor="pointer"
+            _hover={{ bg: "rgba(255, 255, 255, 0.1)", transform: "translateY(-4px)" }}
+            transition="all 0.2s"
+            onClick={() => onNavigate("topics")}
+          >
+            <CardBody>
+              <HStack spacing={4} mb={4}>
+                <Box
+                  w={12}
+                  h={12}
+                  borderRadius="xl"
+                  bg="green.600"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Icon as={FiBook} w={6} h={6} color="white" />
+                </Box>
+                <VStack align="start" spacing={0}>
+                  <Text fontSize="xl" fontWeight="bold" color="white">
+                    Учебные материалы по Python
+                  </Text>
+                  <Text fontSize="sm" color="gray.400">
+                    Теория, подсказки, задания
+                  </Text>
+                </VStack>
+              </HStack>
+              <Divider borderColor="rgba(255,255,255,0.1)" my={4} />
+              <Text color="gray.400" fontSize="sm">
+                8 тем по Python от основ до продвинутых: типы данных, функции, ООП,
+                декораторы, метаклассы, дескрипторы, логирование.
+              </Text>
+              <Button
+                mt={4}
+                w="full"
+                bg="green.600"
+                color="white"
+                _hover={{ bg: "green.700" }}
+              >
+                Изучать темы
               </Button>
             </CardBody>
           </Card>

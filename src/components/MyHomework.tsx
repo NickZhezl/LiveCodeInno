@@ -30,6 +30,12 @@ interface AssignedTask {
   task: string;
   starterCode: string;
   expectedOutput: string;
+  materials?: {
+    type: 'video' | 'article' | 'link';
+    title: string;
+    url: string;
+    description?: string;
+  }[];
   status: "pending" | "completed" | "submitted" | "failed";
   assignedAt: Date;
   completedAt?: Date;
@@ -87,6 +93,7 @@ export default function MyHomework({ onBack }: MyHomeworkProps) {
             task: taskData.task,
             starterCode: taskData.starterCode,
             expectedOutput: taskData.expectedOutput || "",
+            materials: taskData.materials || [],
             status: assignmentData.status,
             assignedAt: assignmentData.assignedAt?.toDate() || new Date(),
             completedAt: assignmentData.completedAt?.toDate(),
@@ -300,6 +307,26 @@ export default function MyHomework({ onBack }: MyHomeworkProps) {
                   ))}
                 </Box>
               </Box>
+
+              {/* Materials Section */}
+              {selectedTask.materials && selectedTask.materials.length > 0 && (
+                <Box p={4} bg="rgba(255,255,255,0.05)" borderRadius="lg">
+                  <Text color="white" fontWeight="bold" mb={3}>📚 Материалы для помощи:</Text>
+                  <VStack spacing={2} align="stretch">
+                    {selectedTask.materials.map((mat, idx) => (
+                      <HStack key={idx} bg="rgba(255,255,255,0.05)" p={3} borderRadius="md" as="a" href={mat.url} target="_blank" rel="noopener noreferrer" _hover={{ bg: "rgba(255,255,255,0.1)" }} cursor="pointer">
+                        <Badge colorScheme={mat.type === 'video' ? 'red' : mat.type === 'article' ? 'blue' : 'green'} fontSize="sm">
+                          {mat.type === 'video' ? '📹' : mat.type === 'article' ? '📄' : '🔗'} {mat.type}
+                        </Badge>
+                        <Text color="purple.300" fontWeight="medium">{mat.title}</Text>
+                        {mat.description && (
+                          <Text color="gray.500" fontSize="sm" ml={2}>- {mat.description}</Text>
+                        )}
+                      </HStack>
+                    ))}
+                  </VStack>
+                </Box>
+              )}
 
               <Box>
                 <Text color="white" fontWeight="bold" mb={2}>Редактор кода:</Text>

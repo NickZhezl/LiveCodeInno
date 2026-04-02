@@ -238,9 +238,6 @@ print(student.study())
             <Heading fontSize="2xl" color="white">
               Python Песочница
             </Heading>
-            <Badge colorScheme="green" fontSize="md" px={4} py={2} borderRadius="full">
-              100% Local
-            </Badge>
           </HStack>
         </HStack>
       </Box>

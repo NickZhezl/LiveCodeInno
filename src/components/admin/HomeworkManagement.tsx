@@ -28,7 +28,14 @@ interface HomeworkTask {
   description: string;
   task: string;
   starterCode: string;
+  expectedOutput: string;
   testCode: string;
+  materials?: {
+    type: 'video' | 'article' | 'link';
+    title: string;
+    url: string;
+    description?: string;
+  }[];
   assignedTo?: string[];
 }
 
@@ -55,8 +62,11 @@ export default function HomeworkManagement({ onBack, onOpenReviews }: HomeworkMa
     description: "",
     task: "",
     starterCode: "",
+    expectedOutput: "",
     testCode: "",
   });
+  const [materials, setMaterials] = useState<{ type: 'video' | 'article' | 'link'; title: string; url: string; description: string }[]>([]);
+  const [newMaterial, setNewMaterial] = useState({ type: 'video' as 'video' | 'article' | 'link', title: '', url: '', description: '' });
 
   useEffect(() => {
     fetchTasks();
@@ -97,6 +107,7 @@ export default function HomeworkManagement({ onBack, onOpenReviews }: HomeworkMa
     try {
       await addDoc(collection(firestore, "customHomework"), {
         ...formData,
+        materials: materials,
         assignedTo: selectedUsers,
         createdAt: new Date(),
         createdBy: userData?.uid,
@@ -160,9 +171,25 @@ export default function HomeworkManagement({ onBack, onOpenReviews }: HomeworkMa
       description: "",
       task: "",
       starterCode: "",
+      expectedOutput: "",
       testCode: "",
     });
+    setMaterials([]);
+    setNewMaterial({ type: 'video', title: '', url: '', description: '' });
     setSelectedUsers([]);
+  }
+
+  function addMaterial() {
+    if (!newMaterial.title || !newMaterial.url) {
+      toast({ title: "Заполните название и ссылку", status: "warning" });
+      return;
+    }
+    setMaterials([...materials, { ...newMaterial }]);
+    setNewMaterial({ type: 'video', title: '', url: '', description: '' });
+  }
+
+  function removeMaterial(index: number) {
+    setMaterials(materials.filter((_, i) => i !== index));
   }
 
   return (
@@ -295,6 +322,73 @@ export default function HomeworkManagement({ onBack, onOpenReviews }: HomeworkMa
                 fontFamily="mono"
                 rows={6}
               />
+
+              <Textarea
+                placeholder="Ожидаемый вывод"
+                value={formData.expectedOutput}
+                onChange={(e) => setFormData({ ...formData, expectedOutput: e.target.value })}
+                bg="rgba(255,255,255,0.05)"
+                border="1px solid rgba(255,255,255,0.1)"
+                color="white"
+                fontFamily="mono"
+                rows={4}
+              />
+
+              {/* Materials Section */}
+              <Box>
+                <FormLabel color="gray.400" mb={2}>Дополнительные материалы:</FormLabel>
+                <HStack spacing={2} mb={3}>
+                  <Select
+                    value={newMaterial.type}
+                    onChange={(e) => setNewMaterial({ ...newMaterial, type: e.target.value as any })}
+                    bg="rgba(255,255,255,0.05)"
+                    border="1px solid rgba(255,255,255,0.1)"
+                    color="white"
+                    w="150px"
+                  >
+                    <option value="video">Видео</option>
+                    <option value="article">Статья</option>
+                    <option value="link">Ссылка</option>
+                  </Select>
+                  <Input
+                    placeholder="Название"
+                    value={newMaterial.title}
+                    onChange={(e) => setNewMaterial({ ...newMaterial, title: e.target.value })}
+                    bg="rgba(255,255,255,0.05)"
+                    border="1px solid rgba(255,255,255,0.1)"
+                    color="white"
+                    flex={1}
+                  />
+                  <Input
+                    placeholder="URL (https://...)"
+                    value={newMaterial.url}
+                    onChange={(e) => setNewMaterial({ ...newMaterial, url: e.target.value })}
+                    bg="rgba(255,255,255,0.05)"
+                    border="1px solid rgba(255,255,255,0.1)"
+                    color="white"
+                    flex={2}
+                  />
+                  <Button onClick={addMaterial} bg="green.600" color="white" _hover={{ bg: "green.700" }}>
+                    Добавить
+                  </Button>
+                </HStack>
+                {materials.length > 0 && (
+                  <VStack spacing={2} align="stretch">
+                    {materials.map((mat, idx) => (
+                      <HStack key={idx} bg="rgba(255,255,255,0.05)" p={3} borderRadius="md">
+                        <Badge colorScheme={mat.type === 'video' ? 'red' : mat.type === 'article' ? 'blue' : 'green'}>
+                          {mat.type === 'video' ? '📹' : mat.type === 'article' ? '📄' : '🔗'} {mat.type}
+                        </Badge>
+                        <Text color="white" flex={1}>{mat.title}</Text>
+                        <Text color="gray.400" fontSize="sm">{mat.url}</Text>
+                        <Button size="sm" bg="red.600" color="white" _hover={{ bg: "red.700" }} onClick={() => removeMaterial(idx)}>
+                          ✕
+                        </Button>
+                      </HStack>
+                    ))}
+                  </VStack>
+                )}
+              </Box>
 
               <Box>
                 <FormLabel color="gray.400" mb={2}>Назначить пользователям:</FormLabel>

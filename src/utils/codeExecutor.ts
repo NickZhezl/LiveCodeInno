@@ -1,11 +1,9 @@
-// Code execution utility - uses local JavaScript-based Python checker
-// No external API needed - everything runs in browser
-import { executePythonWithTests as localExecuteWithTests, executePythonLocal as localExecute } from "./localExecutor";
+// Code execution using Pyodide (real Python)
+import { executePythonLocal, executePythonWithTests as pyodideWithTests } from "./localExecutor";
 
 export async function executeCode(language: string, sourceCode: string) {
-  // For Python, use local execution
   if (language === "python") {
-    const result = await localExecute(sourceCode);
+    const result = await executePythonLocal(sourceCode);
     return {
       run: {
         stdout: result.stdout,
@@ -14,10 +12,9 @@ export async function executeCode(language: string, sourceCode: string) {
     };
   }
 
-  // For other languages, return not implemented
   return {
     run: {
-      stdout: `Execution for ${language} is not yet implemented locally.`,
+      stdout: `Execution for ${language} is not available. Use Python.`,
       stderr: "",
     },
   };
@@ -29,11 +26,11 @@ export async function executeCodeWithTests(
   testCode: string
 ) {
   if (language === "python") {
-    return await localExecuteWithTests(userCode, testCode);
+    return await pyodideWithTests(userCode, testCode);
   }
 
   return {
     passed: false,
-    output: `Testing for ${language} is not yet implemented.`,
+    output: `Testing for ${language} is not available.`,
   };
 }

@@ -31,6 +31,16 @@ service cloud.firestore {
       }
     }
     
+    // Python Topics collection
+    match /pythonTopics/{topicId} {
+      // Anyone can read topics
+      allow read: if true;
+      // Only admins can create, update, delete
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
     // Submissions collection (homework submissions)
     match /submissions/{submissionId} {
       allow read: if isAuthenticated();

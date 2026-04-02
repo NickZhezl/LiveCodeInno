@@ -12,7 +12,7 @@ import Homework from "./components/Homework";
 import Problems from "./components/Problems";
 import MyHomework from "./components/MyHomework";
 import PythonSandbox from "./components/PythonSandbox";
-import CodeEditor from "./components/CodeEditor";
+import LiveCoding from "./components/LiveCoding";
 import InterviewReportComponent from "./interviewReport/InterviewReportComponent";
 
 type Section = "dashboard" | "live-coding" | "topics" | "homework" | "problems" | "my-homework" | "sandbox";
@@ -23,7 +23,6 @@ function InterviewReportPage() {
 }
 
 function MainApp() {
-  const { userData } = useAuth();
   const [currentSection, setCurrentSection] = useState<Section>("dashboard");
   const [roomId, setRoomId] = useState<string | null>(null);
 
@@ -68,17 +67,10 @@ function MainApp() {
   // Live Coding (Code Editor)
   if (currentSection === "live-coding" && roomId) {
     return (
-      <Box minH="100vh" bg="#0f0a19" color="gray.500" px={6} py={0}>
-        <Box borderBottom="1px solid rgba(255,255,255,0.1)" pb={4} mb={4}>
-          <Box color="white" fontWeight="bold" fontSize="lg">
-            {userData?.displayName || "User"}
-          </Box>
-          <Box fontSize="sm" color="gray.500">
-            {userData?.email}
-          </Box>
-        </Box>
-        <CodeEditor roomId={roomId} userName={userData?.displayName || "Anonymous"} />
-      </Box>
+      <LiveCoding
+        onBack={() => setCurrentSection("dashboard")}
+        initialRoomId={roomId}
+      />
     );
   }
 

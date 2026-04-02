@@ -1,4 +1,4 @@
-// Python Topics - от простого к сложному с подробной теорией
+// Python Topics - от простого к сложному с подробной теорией, подсказками и материалами
 export const PYTHON_TOPICS = [
   {
     id: "py-basics-1",
@@ -6,159 +6,207 @@ export const PYTHON_TOPICS = [
     level: 1,
     title: "Типы данных",
     description: "Числа, строки, списки, словари, кортежи, множества",
+    
+    // Краткие подсказки (Cheat Sheet)
+    cheatSheet: `# Числа (int, float)
+age = 25          # int
+price = 19.99     # float
+result = 10 // 3  # 3 (целочисленное деление)
+mod = 10 % 3      # 1 (остаток от деления)
+power = 2 ** 3    # 8 (возведение в степень)
+
+# Строки (str)
+text = "Hello"
+text[0]           # 'H' (первый символ)
+text[1:4]         # 'ell' (срез)
+text[::-1]        # 'olleH' (разворот)
+len(text)         # 5 (длина)
+text.upper()      # 'HELLO'
+text.lower()      # 'hello'
+text.split()      # ['Hello']
+f"Value: {x}"     # f-string (подстановка)
+
+# Списки (list) - ИЗМЕНЯЕМЫЕ
+lst = [1, 2, 3]
+lst.append(4)     # [1, 2, 3, 4]
+lst.insert(0, 0)  # [0, 1, 2, 3, 4]
+lst.remove(2)     # [0, 1, 3, 4]
+lst.pop()         # удаляет последний
+lst[0] = 10       # изменение элемента
+len(lst)          # длина списка
+
+# Кортежи (tuple) - НЕИЗМЕНЯЕМЫЕ
+tpl = (1, 2, 3)
+x, y, z = tpl     # распаковка
+single = (5,)     # кортеж из 1 элемента
+
+# Словари (dict)
+dct = {"key": "value"}
+dct["key"]        # доступ к значению
+dct.get("key")    # безопасный доступ
+dct.keys()        # все ключи
+dct.values()      # все значения
+dct.items()       # пары (ключ, значение)
+
+# Множества (set) - уникальные элементы
+st = {1, 2, 3}
+st.add(4)         # добавить элемент
+st.remove(2)      # удалить элемент
+a | b             # объединение
+a & b             # пересечение
+a - b             # разность`,
+
+    // Дополнительные материалы (ссылки, видео, статьи)
+    materials: [
+      {
+        type: "video",
+        title: "Python за 1 час - Типы данных",
+        url: "https://www.youtube.com/watch?v=Z1Yd7upQsXY",
+        description: "Полный курс по типам данных в Python"
+      },
+      {
+        type: "article",
+        title: "Официальная документация Python",
+        url: "https://docs.python.org/3/library/stdtypes.html",
+        description: "Встроенные типы данных Python"
+      },
+      {
+        type: "link",
+        title: "Python Tutor - Визуализация",
+        url: "https://pythontutor.com/",
+        description: "Визуальное выполнение кода по шагам"
+      }
+    ],
+
+    // Подробная теория с объяснениями
     theory: `# Типы данных в Python
+
+## Введение
+
+Python - язык с **динамической типизацией**. Это означает, что вам не нужно объявлять тип переменной заранее - Python сам определяет его по значению.
 
 ## 1. Числовые типы (Numeric Types)
 
-### int - целые числа
+### Целые числа (int)
+
+Целые числа используются для подсчёта, индексации и математических вычислений без дробной части.
+
+**Особенности:**
+- Неограниченный размер (может хранить очень большие числа)
+- Поддерживает отрицательные числа
+- Операции: +, -, *, /, // (целочисленное), % (остаток), ** (степень)
+
+**Примеры:**
 \`\`\`python
 age = 25
-count = -10
-big_number = 1_000_000  # Читаемость с подчёркиваниями
+negative = -10
+big_number = 1_000_000  # Подчёркивания для читаемости
 \`\`\`
 
-### float - числа с плавающей точкой
+### Числа с плавающей точкой (float)
+
+Числа с дробной частью для точных вычислений.
+
+**Особенности:**
+- Могут быть неточными из-за способа хранения в памяти
+- Используйте модуль \`decimal\` для финансовых вычислений
+
+**Примеры:**
 \`\`\`python
 price = 19.99
 rate = 0.5
-scientific = 1.5e3  # 1500.0
-\`\`\`
-
-### complex - комплексные числа
-\`\`\`python
-z = 3 + 4j
-print(z.real)  # 3.0
-print(z.imag)  # 4.0
+scientific = 1.5e3  # 1500.0 (научная нотация)
 \`\`\`
 
 ## 2. Строки (str)
 
-Неизменяемая последовательность символов.
+Строки - это **неизменяемые** последовательности символов.
 
-\`\`\`python
-# Создание строк
-name = "Alice"
-message = 'Hello'
-multiline = """Многострочная
-строка"""
+**Ключевые моменты:**
+- Можно использовать одинарные или двойные кавычки
+- Индексация начинается с 0
+- Отрицательные индексы считаются с конца (-1 = последний символ)
+- Нельзя изменить символ по индексу (создавайте новую строку)
 
-# Операции
-full_name = "John" + " " + "Doe"  # Конкатенация
-repeated = "Hi" * 3  # "HiHiHi"
+**Основные операции:**
+- \`text[0]\` - первый символ
+- \`text[1:4]\` - срез (с 1 по 3 включительно)
+- \`text[::-1]\` - разворот строки
+- \`len(text)\` - длина строки
 
-# Индексация и срезы
-text = "Hello World"
-text[0]      # 'H'
-text[-1]     # 'd'
-text[0:5]    # 'Hello'
-text[::-1]   # 'dlroW olleH' (разворот)
-
-# Методы строк
-text.lower()           # "hello world"
-text.upper()           # "HELLO WORLD"
-text.split()           # ["Hello", "World"]
-text.replace("o", "0") # "Hell0 W0rld"
-text.find("World")     # 6
-text.startswith("He")  # True
-text.strip()           # Удаление пробелов по краям
-\`\`\`
+**Методы строк:**
+- \`text.upper()\` / \`text.lower()\` - регистр
+- \`text.strip()\` - удалить пробелы по краям
+- \`text.split()\` - разбить на список
+- \`text.replace(old, new)\` - замена
+- \`text.find(sub)\` - найти подстроку
+- \`text.startswith(prefix)\` - проверка начала
 
 ## 3. Списки (list)
 
-Изменяемая упорядоченная последовательность.
+Списки - **изменяемые** упорядоченные коллекции.
 
-\`\`\`python
-# Создание
-numbers = [1, 2, 3, 4, 5]
-mixed = [1, "hello", 3.14, True]
-nested = [[1, 2], [3, 4]]
+**Важно запомнить:**
+- Можно изменять элементы после создания
+- Могут содержать элементы разных типов
+- Поддерживают вложенность (списки в списке)
 
-# Доступ
-numbers[0]      # 1
-numbers[-1]     # 5 (последний)
-numbers[1:3]    # [2, 3]
-
-# Методы
-numbers.append(6)        # Добавить в конец
-numbers.insert(0, 0)     # Вставить по индексу
-numbers.remove(3)        # Удалить элемент
-popped = numbers.pop()   # Удалить последний
-numbers.index(2)         # Найти индекс
-numbers.count(2)         # Посчитать вхождения
-numbers.sort()           # Сортировка
-numbers.reverse()        # Разворот
-len(numbers)             # Длина
-\`\`\`
+**Основные операции:**
+- \`lst.append(x)\` - добавить в конец
+- \`lst.insert(i, x)\` - вставить по индексу
+- \`lst.remove(x)\` - удалить элемент
+- \`lst.pop()\` - удалить последний и вернуть
+- \`lst.index(x)\` - найти индекс элемента
+- \`lst.count(x)\` - посчитать вхождения
+- \`lst.sort()\` - отсортировать
+- \`lst.reverse()\` - разворот
 
 ## 4. Кортежи (tuple)
 
-Неизменяемая упорядоченная последовательность.
+Кортежи - **неизменяемые** упорядоченные коллекции.
 
+**Когда использовать:**
+- Когда данные не должны изменяться
+- Для возврата нескольких значений из функции
+- Как ключи в словаре (только неизменяемые типы)
+
+**Распаковка кортежей:**
 \`\`\`python
-point = (10, 20)
-single = (5,)  # Запятая обязательна!
-
-# Распаковка
-x, y = point
-
-# Использование
-def get_user():
-    return ("Alice", 25, "Moscow")
-
-name, age, city = get_user()
+x, y, z = (1, 2, 3)
+first, *rest = [1, 2, 3, 4]  # first=1, rest=[2,3,4]
 \`\`\`
 
 ## 5. Словари (dict)
 
-Неупорядоченная коллекция пар ключ-значение.
+Словари - неупорядоченные (до Python 3.7) / упорядоченные (Python 3.8+) коллекции пар ключ-значение.
 
-\`\`\`python
-# Создание
-person = {"name": "Alice", "age": 25}
+**Особенности:**
+- Ключи должны быть неизменяемыми (str, int, tuple)
+- Значения могут быть любыми
+- Быстрый доступ по ключу (O(1))
 
-# Доступ
-person["name"]        # "Alice"
-person.get("age")     # 25
-person.get("city", "Unknown")  # "Unknown"
-
-# Изменение
-person["age"] = 26           # Обновить
-person["city"] = "Moscow"    # Добавить
-
-# Методы
-person.keys()    # dict_keys(['name', 'age', 'city'])
-person.values()  # dict_values(['Alice', 26, 'Moscow'])
-person.items()   # dict_items([...])
-
-# Удаление
-del person["city"]
-age = person.pop("age")
-\`\`\`
+**Основные операции:**
+- \`dct[key]\` - доступ к значению
+- \`dct.get(key, default)\` - безопасный доступ
+- \`dct.keys()\` - получить все ключи
+- \`dct.values()\` - получить все значения
+- \`dct.items()\` - пары (ключ, значение)
 
 ## 6. Множества (set)
 
-Неупорядоченная коллекция уникальных элементов.
+Множества - неупорядоченные коллекции **уникальных** элементов.
 
-\`\`\`python
-numbers = {1, 2, 3, 4, 5}
+**Когда использовать:**
+- Удаление дубликатов из списка
+- Проверка принадлежности (быстрее чем в списке)
+- Математические операции (объединение, пересечение)
 
-# Операции
-a = {1, 2, 3}
-b = {3, 4, 5}
+**Операции:**
+- \`a | b\` - объединение
+- \`a & b\` - пересечение
+- \`a - b\` - разность
+- \`a ^ b\` - симметричная разность`,
 
-a | b  # Объединение: {1, 2, 3, 4, 5}
-a & b  # Пересечение: {3}
-a - b  # Разность: {1, 2}
-a ^ b  # Симметричная разность: {1, 2, 4, 5}
-
-# Методы
-numbers.add(6)
-numbers.remove(3)
-numbers.discard(10)  # Не вызывает ошибку
-
-# Уникальные элементы
-unique = list(set([1, 2, 2, 3, 3, 3]))  # [1, 2, 3]
-\`\`\``,
     codeExamples: [
       {
         title: "Работа со строками",
@@ -212,94 +260,173 @@ print(f"hobbies: {hobbies}")`
     level: 2,
     title: "Управляющие конструкции",
     description: "if/else, циклы for/while, break/continue",
+    
+    cheatSheet: `# if/elif/else
+if x > 10:
+    print("Big")
+elif x > 5:
+    print("Medium")
+else:
+    print("Small")
+
+# Тернарный оператор
+status = "yes" if x > 0 else "no"
+
+# Логические операторы
+x > 5 and x < 10   # И (оба истинны)
+x > 5 or x < 0     # ИЛИ (одно истинно)
+not x > 5          # НЕ (инверсия)
+
+# for цикл
+for i in range(5):      # 0,1,2,3,4
+    print(i)
+
+for i in range(2, 6):   # 2,3,4,5
+    print(i)
+
+for i in range(0, 10, 2):  # 0,2,4,6,8
+    print(i)
+
+# Перебор списка
+for item in [1, 2, 3]:
+    print(item)
+
+# С индексом
+for i, item in enumerate(list):
+    print(i, item)
+
+# while цикл
+while x < 10:
+    x += 1
+
+# break / continue
+for i in range(10):
+    if i == 5:
+        break    # выход из цикла
+    if i % 2 == 0:
+        continue # пропуск итерации`,
+
+    materials: [
+      {
+        type: "video",
+        title: "Условия и циклы в Python",
+        url: "https://www.youtube.com/watch?v=6iF8Xb7Z3wQ",
+        description: "if/else, for, while - полный разбор"
+      },
+      {
+        type: "article",
+        title: "Control Flow в Python",
+        url: "https://docs.python.org/3/tutorial/controlflow.html",
+        description: "Официальная документация"
+      }
+    ],
+
     theory: `# Управляющие конструкции
 
 ## 1. Условные операторы (if/elif/else)
 
+Условные операторы позволяют выполнять разный код в зависимости от условий.
+
+**Синтаксис:**
 \`\`\`python
-age = 18
-
-if age < 13:
-    print("Ребенок")
-elif age < 18:
-    print("Подросток")
+if условие1:
+    # выполняется если условие1 истинно
+elif условие2:
+    # выполняется если условие2 истинно
 else:
-    print("Взрослый")
+    # выполняется если все условия ложны
+\`\`\`
 
-# Тернарный оператор
-status = "совершеннолетний" if age >= 18 else "несовершеннолетний"
+**Важные моменты:**
+- Двоеточие \`:\` обязательно после условия
+- Отступы (4 пробела) определяют блок кода
+- \`elif\` можно использовать много раз
+- \`else\` необязателен
 
-# Логические операторы
-if age >= 18 and age <= 65:
-    print("Работоспособный возраст")
+**Логические операторы:**
+- \`and\` - И (оба условия истинны)
+- \`or\` - ИЛИ (хотя бы одно истинно)
+- \`not\` - НЕ (инвертирует значение)
 
-if age < 18 or age > 65:
-    print("Не работает")
+**Примеры условий:**
+- \`x > 5\` - больше
+- \`x < 5\` - меньше
+- \`x == 5\` - равно (два знака!)
+- \`x != 5\` - не равно
+- \`x >= 5\` - больше или равно
+- \`x in lst\` - содержится в списке
 
-if not age < 0:
-    print("Возраст корректен")
+**Тернарный оператор:**
+Короткая запись if-else в одну строку:
+\`\`\`python
+# Длинная форма
+if x > 0:
+    status = "positive"
+else:
+    status = "negative"
+
+# Короткая форма
+status = "positive" if x > 0 else "negative"
 \`\`\`
 
 ## 2. Цикл for
 
+Цикл \`for\` используется для перебора последовательностей.
+
+**Функция range():**
+- \`range(5)\` - числа от 0 до 4
+- \`range(2, 6)\` - числа от 2 до 5
+- \`range(0, 10, 2)\` - числа от 0 до 8 с шагом 2
+
+**Перебор с индексом:**
 \`\`\`python
-# range() генерирует числа
-for i in range(5):      # 0, 1, 2, 3, 4
-    print(i)
-
-for i in range(2, 6):   # 2, 3, 4, 5
-    print(i)
-
-for i in range(0, 10, 2):  # 0, 2, 4, 6, 8
-    print(i)
-
-# Перебор списка
 fruits = ["apple", "banana", "cherry"]
-for fruit in fruits:
-    print(fruit)
 
-# С индексом (enumerate)
+# Обычный способ
+for i in range(len(fruits)):
+    print(f"{i}: {fruits[i]}")
+
+# С помощью enumerate (лучше!)
 for i, fruit in enumerate(fruits):
     print(f"{i}: {fruit}")
+\`\`\`
 
-# break и continue
-for i in range(10):
-    if i == 5:
-        break    # Выход из цикла
-    if i % 2 == 0:
-        continue # Пропустить итерацию
-    print(i)
+**break и continue:**
+- \`break\` - немедленно завершает цикл
+- \`continue\` - пропускает текущую итерацию
 
-# else в цикле (выполняется если не было break)
+**else в цикле:**
+Блок \`else\` выполняется если цикл завершился естественно (не через break):
+\`\`\`python
 for i in range(5):
-    print(i)
+    if i == 10:
+        break
 else:
-    print("Цикл завершен")
+    print("Цикл завершён без break")
 \`\`\`
 
 ## 3. Цикл while
 
+Цикл \`while\` выполняется пока условие истинно.
+
+**Синтаксис:**
 \`\`\`python
-# Базовый цикл
+while условие:
+    # код
+\`\`\`
+
+**Важно:**
+- Убедитесь что условие станет ложным (иначе бесконечный цикл!)
+- Обычно используется счётчик или флаг
+
+**Пример:**
+\`\`\`python
 count = 0
 while count < 5:
     print(count)
-    count += 1
-
-# С break
-while True:
-    user_input = input("Введите 'quit': ")
-    if user_input == "quit":
-        break
-
-# while с else
-count = 0
-while count < 5:
-    print(count)
-    count += 1
-else:
-    print("Цикл завершен")
+    count += 1  # Обязательно изменяем счётчик!
 \`\`\``,
+
     codeExamples: [
       {
         title: "Проверка условий",
@@ -342,69 +469,183 @@ else:
     level: 3,
     title: "Функции",
     description: "Объявление, аргументы, return, lambda",
-    theory: `# Функции
+    
+    cheatSheet: `# Объявление функции
+def func_name(param1, param2):
+    return result
 
-## 1. Объявление функций
-
-\`\`\`python
-# Базовая функция
-def greet(name):
-    return f"Hello, {name}!"
-
-result = greet("Alice")  # "Hello, Alice!"
+# Вызов функции
+result = func_name(arg1, arg2)
 
 # Параметры по умолчанию
-def greet(name, greeting="Hello"):
-    return f"{greeting}, {name}!"
-
-greet("Alice")           # "Hello, Alice!"
-greet("Alice", "Hi")     # "Hi, Alice!"
+def greet(name="Guest"):
+    return f"Hello, {name}!"
 
 # Произвольное число аргументов
 def sum_all(*args):
     return sum(args)
-
-sum_all(1, 2, 3)  # 6
 
 # Именованные аргументы
 def print_info(**kwargs):
     for key, value in kwargs.items():
         print(f"{key}: {value}")
 
-print_info(name="Alice", age=25)
-\`\`\`
-
-## 2. Лямбда-функции
-
-\`\`\`python
-# Лямбда-функции (анонимные)
+# Лямбда-функции
 square = lambda x: x ** 2
-square(5)  # 25
-
-# С несколькими аргументами
 add = lambda x, y: x + y
-add(2, 3)  # 5
 
-# Использование с map и filter
-numbers = [1, 2, 3, 4, 5]
-squares = list(map(lambda x: x**2, numbers))  # [1, 4, 9, 16, 25]
-evens = list(filter(lambda x: x % 2 == 0, numbers))  # [2, 4]
+# Использование с map/filter
+squares = list(map(lambda x: x**2, numbers))
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+
+# Область видимости
+global_var = "global"
+
+def func():
+    local_var = "local"
+    global global_var  # доступ к глобальной`,
+
+    materials: [
+      {
+        type: "video",
+        title: "Функции в Python за 30 минут",
+        url: "https://www.youtube.com/watch?v=9Os0o3wzS_I",
+        description: "Полный гид по функциям"
+      },
+      {
+        type: "article",
+        title: "Defining Functions",
+        url: "https://docs.python.org/3/tutorial/controlflow.html#defining-functions",
+        description: "Официальная документация"
+      },
+      {
+        type: "link",
+        title: "Lambda Functions Guide",
+        url: "https://realpython.com/python-lambda/",
+        description: "Подробно о лямбда-функциях"
+      }
+    ],
+
+    theory: `# Функции
+
+## 1. Объявление функций
+
+Функции - это именованные блоки кода, которые можно вызывать многократно.
+
+**Синтаксис:**
+\`\`\`python
+def имя_функции(параметры):
+    """Документация (docstring)"""
+    # Тело функции
+    return результат
 \`\`\`
 
-## 3. Область видимости
+**Ключевые моменты:**
+- \`def\` - ключевое слово для объявления
+- Параметры перечисляются в скобках
+- \`return\` возвращает значение (необязателен)
+- Без return функция возвращает \`None\`
+
+**Пример:**
+\`\`\`python
+def greet(name):
+    """Приветствует пользователя по имени"""
+    return f"Hello, {name}!"
+
+result = greet("Alice")  # "Hello, Alice!"
+\`\`\`
+
+## 2. Параметры и аргументы
+
+**Параметры по умолчанию:**
+\`\`\`python
+def greet(name, greeting="Hello"):
+    return f"{greeting}, {name}!"
+
+greet("Alice")           # "Hello, Alice!"
+greet("Alice", "Hi")     # "Hi, Alice!"
+\`\`\`
+
+**Важно:** Параметры по умолчанию должны идти после обязательных!
+
+**Произвольное число позиционных аргументов (*args):**
+\`\`\`python
+def sum_all(*args):
+    """Принимает любое число аргументов"""
+    return sum(args)
+
+sum_all(1, 2, 3)      # 6
+sum_all(1, 2, 3, 4, 5) # 15
+\`\`\`
+
+**Произвольное число именованных аргументов (**kwargs):**
+\`\`\`python
+def print_info(**kwargs):
+    """Принимает именованные аргументы"""
+    for key, value in kwargs.items():
+        print(f"{key}: {value}")
+
+print_info(name="Alice", age=25)
+# name: Alice
+# age: 25
+\`\`\`
+
+## 3. Лямбда-функции
+
+Лямбда-функции - это анонимные (безымянные) функции в одну строку.
+
+**Синтаксис:**
+\`\`\`python
+lambda параметры: выражение
+\`\`\`
+
+**Примеры:**
+\`\`\`python
+# Обычная функция
+def square(x):
+    return x ** 2
+
+# Лямбда-функция (то же самое)
+square = lambda x: x ** 2
+
+square(5)  # 25
+\`\`\`
+
+**Когда использовать:**
+- Короткие функции для map/filter/sorted
+- Когда функция нужна только в одном месте
+
+**С map():**
+\`\`\`python
+numbers = [1, 2, 3, 4, 5]
+squares = list(map(lambda x: x**2, numbers))
+# [1, 4, 9, 16, 25]
+\`\`\`
+
+**С filter():**
+\`\`\`python
+numbers = [1, 2, 3, 4, 5]
+evens = list(filter(lambda x: x % 2 == 0, numbers))
+# [2, 4]
+\`\`\`
+
+## 4. Область видимости
+
+**Локальные переменные** - объявлены внутри функции, видны только там.
+
+**Глобальные переменные** - объявлены вне функции, видны везде.
 
 \`\`\`python
-# Глобальная переменная
 global_var = "I'm global"
 
 def my_func():
-    # Локальная переменная
     local_var = "I'm local"
     print(global_var)  # Доступна
     
 my_func()
 print(local_var)  # Ошибка! Не видна
 \`\`\``,
+
     codeExamples: [
       {
         title: "Функция с параметрами",
@@ -452,67 +693,161 @@ print(add(2, 3))`
     level: 4,
     title: "Классы и объекты",
     description: "Основы ООП, атрибуты, методы, __init__",
-    theory: `# Объектно-ориентированное программирование
+    
+    cheatSheet: `# Объявление класса
+class ClassName:
+    def __init__(self, param):
+        self.attribute = param
+    
+    def method(self):
+        return self.attribute
+
+# Создание объекта
+obj = ClassName(value)
+
+# Доступ к атрибутам
+obj.attribute
+obj.method()
+
+# Наследование
+class Child(Parent):
+    def __init__(self, param):
+        super().__init__(param)
+    
+    def method(self):  # Переопределение
+        return "New behavior"
+
+# Проверка типа
+isinstance(obj, ClassName)  # True
+issubclass(Child, Parent)   # True
+
+# Специальные методы
+__init__   # конструктор
+__str__    # строковое представление
+__repr__   # официальное представление
+__len__    # длина объекта
+__add__    # операция сложения`,
+
+    materials: [
+      {
+        type: "video",
+        title: "ООП в Python за 1 час",
+        url: "https://www.youtube.com/watch?v=Ej_02ICOIgs",
+        description: "Классы, объекты, наследование"
+      },
+      {
+        type: "article",
+        title: "Classes in Python",
+        url: "https://docs.python.org/3/tutorial/classes.html",
+        description: "Официальная документация"
+      },
+      {
+        type: "link",
+        title: "Real Python OOP",
+        url: "https://realpython.com/python3-object-oriented-programming/",
+        description: "Подробный гид по ООП"
+      }
+    ],
+
+    theory: `# Объектно-ориентированное программирование (ООП)
 
 ## 1. Классы и объекты
 
+**Класс** - это шаблон для создания объектов.
+**Объект** - это экземпляр класса.
+
+**Синтаксис:**
+\`\`\`python
+class ClassName:
+    """Документация класса"""
+    
+    def __init__(self, параметры):
+        """Конструктор - вызывается при создании объекта"""
+        self.attribute = параметры
+    
+    def method(self):
+        """Метод - функция внутри класса"""
+        return self.attribute
+\`\`\`
+
+**Ключевые моменты:**
+- \`self\` - ссылка на текущий объект (всегда первый параметр)
+- \`__init__\` - конструктор, вызывается автоматически
+- Атрибуты экземпляра создаются через \`self.name\`
+
+**Пример:**
 \`\`\`python
 class Person:
-    # Атрибут класса (общий для всех)
-    species = "Homo sapiens"
-    
     def __init__(self, name, age):
-        # Атрибуты экземпляра
         self.name = name
         self.age = age
     
     def greet(self):
         return f"Hello, I'm {self.name}"
-    
-    def __str__(self):
-        return f"{self.name}, {self.age} лет"
 
 # Создание объектов
 alice = Person("Alice", 25)
 bob = Person("Bob", 30)
 
 print(alice.greet())  # "Hello, I'm Alice"
-print(bob)            # "Bob, 30 лет"
+print(bob.age)        # 30
 \`\`\`
 
 ## 2. Наследование
 
+Наследование позволяет создать новый класс на основе существующего.
+
+**Синтаксис:**
+\`\`\`python
+class Parent:
+    def method(self):
+        return "Parent method"
+
+class Child(Parent):
+    def child_method(self):
+        return "Child method"
+\`\`\`
+
+**Переопределение методов:**
 \`\`\`python
 class Animal:
-    def __init__(self, name):
-        self.name = name
-    
     def speak(self):
-        pass
+        return "Some sound"
 
 class Dog(Animal):
-    def speak(self):
+    def speak(self):  # Переопределяем метод родителя
         return "Woof!"
 
 class Cat(Animal):
     def speak(self):
         return "Meow!"
+\`\`\`
 
-# Проверка типа
-isinstance(Dog("Buddy"), Animal)  # True
-isinstance(Dog("Buddy"), Dog)     # True
+**Вызов метода родителя:**
+\`\`\`python
+class Child(Parent):
+    def method(self):
+        parent_result = super().method()
+        return parent_result + " extended"
 \`\`\`
 
 ## 3. Инкапсуляция
 
+Инкапсуляция - сокрытие внутренних данных класса.
+
+**Соглашения в Python:**
+- \`name\` - публичный атрибут (доступен всем)
+- \`_name\` - защищённый (для внутреннего использования)
+- \`__name\` - приватный (доступен только внутри класса)
+
+**Пример:**
 \`\`\`python
 class BankAccount:
     def __init__(self, balance=0):
-        self._balance = balance  # Защищённый атрибут
+        self._balance = balance  # Защищённый
     
     def deposit(self, amount):
         self._balance += amount
-        return f"Deposited {amount}"
     
     def get_balance(self):
         return self._balance
@@ -520,6 +855,9 @@ class BankAccount:
 
 ## 4. Полиморфизм
 
+Полиморфизм - возможность использовать объекты разных классов через общий интерфейс.
+
+**Пример:**
 \`\`\`python
 class Shape:
     def area(self):
@@ -540,11 +878,12 @@ class Circle(Shape):
     def area(self):
         return 3.14 * self.r ** 2
 
-# Полиморфизм
+# Полиморфизм в действии
 shapes = [Rectangle(5, 10), Circle(7)]
 for shape in shapes:
     print(f"Area: {shape.area()}")
 \`\`\``,
+
     codeExamples: [
       {
         title: "Простой класс",
@@ -619,51 +958,26 @@ print(f"Perimeter: {rect.perimeter()}")`
     level: 5,
     title: "Декораторы",
     description: "Функции-обёртки, @decorator, functools.wraps",
-    theory: `# Декораторы
-
-## 1. Основы декораторов
-
-Декоратор - это функция, которая принимает другую функцию и расширяет её поведение.
-
-\`\`\`python
-# Простой декоратор
+    
+    cheatSheet: `# Простой декоратор
 def my_decorator(func):
     def wrapper():
-        print("До вызова функции")
+        print("До")
         func()
-        print("После вызова функции")
+        print("После")
     return wrapper
 
 @my_decorator
 def say_hello():
     print("Hello!")
 
-say_hello()
-# Вывод:
-# До вызова функции
-# Hello!
-# После вызова функции
-\`\`\`
-
-## 2. Декораторы с аргументами
-
-\`\`\`python
+# Декоратор с аргументами
 def decorator_with_args(func):
     def wrapper(*args, **kwargs):
-        print("Аргументы:", args, kwargs)
         return func(*args, **kwargs)
     return wrapper
 
-@decorator_with_args
-def greet(name, greeting="Hello"):
-    print(f"{greeting}, {name}!")
-
-greet("Alice", greeting="Hi")
-\`\`\`
-
-## 3. Декораторы с параметрами
-
-\`\`\`python
+# Декоратор с параметрами
 def repeat(times):
     def decorator(func):
         def wrapper(*args, **kwargs):
@@ -676,12 +990,7 @@ def repeat(times):
 def say_hi():
     print("Hi!")
 
-say_hi()
-\`\`\`
-
-## 4. functools.wraps
-
-\`\`\`python
+# functools.wraps
 from functools import wraps
 
 def my_decorator(func):
@@ -690,13 +999,148 @@ def my_decorator(func):
         return func(*args, **kwargs)
     return wrapper
 
+# Встроенные декораторы
+@staticmethod    # метод без self
+@classmethod     # метод с cls
+@property        # getter`,
+
+    materials: [
+      {
+        type: "video",
+        title: "Python Decorators за 20 минут",
+        url: "https://www.youtube.com/watch?v=FXUUSfJO_J4",
+        description: "Полное руководство"
+      },
+      {
+        type: "article",
+        title: "Decorators in Python",
+        url: "https://docs.python.org/3/glossary.html#term-decorator",
+        description: "Официальная документация"
+      },
+      {
+        type: "link",
+        title: "Real Python Decorators",
+        url: "https://realpython.com/primer-on-python-decorators/",
+        description: "Подробный разбор с примерами"
+      }
+    ],
+
+    theory: `# Декораторы
+
+## 1. Что такое декоратор?
+
+**Декоратор** - это функция, которая принимает другую функцию и расширяет её поведение, не изменяя саму функцию.
+
+**Простыми словами:** Декоратор - это "обёртка" вокруг функции.
+
+**Синтаксис:**
+\`\`\`python
+# Длинная форма
+def my_decorator(func):
+    def wrapper():
+        print("До вызова функции")
+        func()
+        print("После вызова функции")
+    return wrapper
+
+def say_hello():
+    print("Hello!")
+
+say_hello = my_decorator(say_hello)
+
+# Короткая форма (то же самое)
 @my_decorator
 def say_hello():
-    """Docstring"""
+    print("Hello!")
+\`\`\`
+
+## 2. Как работает декоратор
+
+**Шаг 1:** Декоратор принимает функцию как аргумент.
+
+**Шаг 2:** Создаёт функцию-обёртку (wrapper).
+
+**Шаг 3:** Возвращает обёртку вместо оригинальной функции.
+
+**Пример с логированием:**
+\`\`\`python
+def logger(func):
+    def wrapper(*args, **kwargs):
+        print(f"Вызов функции: {func.__name__}")
+        result = func(*args, **kwargs)
+        print(f"Результат: {result}")
+        return result
+    return wrapper
+
+@logger
+def add(a, b):
+    return a + b
+
+add(2, 3)
+# Вызов функции: add
+# Результат: 5
+\`\`\`
+
+## 3. Декораторы с аргументами
+
+Если декорируемая функция принимает аргументы, обёртка должна их передать:
+
+\`\`\`python
+def decorator(func):
+    def wrapper(*args, **kwargs):
+        # *args - позиционные аргументы
+        # **kwargs - именованные аргументы
+        return func(*args, **kwargs)
+    return wrapper
+\`\`\`
+
+## 4. Декораторы с параметрами
+
+Декоратор может сам принимать параметры:
+
+\`\`\`python
+def repeat(times):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for _ in range(times):
+                func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+@repeat(3)
+def greet(name):
+    print(f"Hello, {name}!")
+
+greet("Alice")
+# Hello, Alice!
+# Hello, Alice!
+# Hello, Alice!
+\`\`\`
+
+## 5. functools.wraps
+
+Проблема: после декорирования функция теряет своё имя и документацию.
+
+Решение: использовать \`@wraps(func)\`:
+
+\`\`\`python
+from functools import wraps
+
+def my_decorator(func):
+    @wraps(func)  # Сохраняет имя и документацию
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+@my_decorator
+def say_hello():
+    """Say hello"""
     print("Hello!")
 
 print(say_hello.__name__)  # say_hello (не wrapper!)
+print(say_hello.__doc__)   # Say hello
 \`\`\``,
+
     codeExamples: [
       {
         title: "Декоратор времени выполнения",
@@ -775,29 +1219,15 @@ say_hello("Alice")`
     level: 6,
     title: "Метаклассы",
     description: "Классы для создания классов, type, __new__, __init__",
-    theory: `# Метаклассы
-
-## 1. Что такое метакласс?
-
-Метакласс - это класс, экземплярами которого являются другие классы.
-
-\`\`\`python
-# type - метакласс по умолчанию
+    
+    cheatSheet: `# type - метакласс по умолчанию
 class MyClass:
     pass
 
 # Эквивалентно:
 MyClass = type('MyClass', (), {})
 
-# type принимает 3 аргумента:
-# 1. Имя класса (строка)
-# 2. Кортеж базовых классов
-# 3. Словарь атрибутов и методов
-\`\`\`
-
-## 2. Создание метакласса
-
-\`\`\`python
+# Создание метакласса
 class SingletonMeta(type):
     _instances = {}
     
@@ -807,22 +1237,116 @@ class SingletonMeta(type):
         return cls._instances[cls]
 
 class Database(metaclass=SingletonMeta):
-    def __init__(self):
-        if not hasattr(self, '_initialized'):
-            self.data = {}
-            self._initialized = True
+    pass
 
-db1 = Database()
-db2 = Database()
-db1 is db2  # True (один экземпляр)
+# Валидация через метакласс
+class ValidatorMeta(type):
+    def __new__(mcs, name, bases, attrs):
+        # Проверка перед созданием класса
+        if 'required_attr' not in attrs:
+            raise AttributeError("Missing required_attr")
+        return super().__new__(mcs, name, bases, attrs)
+
+# Методы метакласса
+__new__    # создание класса
+__init__   # инициализация класса
+__call__   # создание экземпляра`,
+
+    materials: [
+      {
+        type: "article",
+        title: "Metaclasses in Python",
+        url: "https://docs.python.org/3/reference/datamodel.html#metaclasses",
+        description: "Официальная документация"
+      },
+      {
+        type: "link",
+        title: "Real Python Metaclasses",
+        url: "https://realpython.com/python-metaclasses/",
+        description: "Подробный разбор"
+      }
+    ],
+
+    theory: `# Метаклассы
+
+## 1. Что такое метакласс?
+
+**Метакласс** - это класс, экземплярами которого являются другие классы.
+
+**Простыми словами:**
+- Обычный класс создаёт объекты
+- Метакласс создаёт классы
+
+**Иерархия:**
+\`\`\`
+Метакласс → Класс → Объект
 \`\`\`
 
-## 3. Валидация через метаклассы
+## 2. type - встроенный метакласс
 
+\`type\` - это метакласс по умолчанию в Python.
+
+**Создание класса через type:**
+\`\`\`python
+# Обычный способ
+class MyClass:
+    x = 5
+
+# Эквивалентно через type
+MyClass = type('MyClass', (), {'x': 5})
+
+# type принимает 3 аргумента:
+# 1. Имя класса (строка)
+# 2. Кортеж базовых классов
+# 3. Словарь атрибутов
+\`\`\`
+
+## 3. Создание собственного метакласса
+
+Метакласс должен наследоваться от \`type\`:
+
+\`\`\`python
+class SingletonMeta(type):
+    """Метакласс для паттерна Singleton"""
+    _instances = {}
+    
+    def __call__(cls, *args, **kwargs):
+        """Вызывается при создании экземпляра"""
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class Database(metaclass=SingletonMeta):
+    def __init__(self):
+        self.data = {}
+
+# Использование
+db1 = Database()
+db2 = Database()
+print(db1 is db2)  # True (один экземпляр)
+\`\`\`
+
+## 4. Методы метакласса
+
+**__new__(mcs, name, bases, attrs):**
+- Вызывается ПЕРЕД созданием класса
+- Должен вернуть новый класс
+- Можно модифицировать атрибуты
+
+**__init__(cls, name, bases, attrs):**
+- Вызывается ПОСЛЕ создания класса
+- Можно выполнить дополнительную инициализацию
+
+**__call__(cls, *args, **kwargs):**
+- Вызывается при создании экземпляра класса
+- Контролирует создание объектов
+
+## 5. Практическое применение
+
+**Валидация классов:**
 \`\`\`python
 class ValidatorMeta(type):
     def __new__(mcs, name, bases, attrs):
-        # Проверяем наличие обязательных атрибутов
         if name != 'BaseModel':
             required = ['id', 'name']
             for attr in required:
@@ -835,28 +1359,29 @@ class BaseModel(metaclass=ValidatorMeta):
 
 class User(BaseModel):
     id = None
-    name = None
-    email = None
+    name = None  # Обязательно
 \`\`\`
 
-## 4. Методы метакласса
-
+**Автоматическая регистрация:**
 \`\`\`python
-class Meta(type):
+plugins = {}
+
+class PluginMeta(type):
     def __new__(mcs, name, bases, attrs):
-        # Создание класса
-        attrs['added_by_meta'] = True
-        return super().__new__(mcs, name, bases, attrs)
-    
-    def __init__(cls, name, bases, attrs):
-        # Инициализация класса
-        super().__init__(name, bases, attrs)
-    
-    def __call__(cls, *args, **kwargs):
-        # Создание экземпляра
-        print(f"Creating instance of {cls.__name__}")
-        return super().__call__(*args, **kwargs)
+        cls = super().__new__(mcs, name, bases, attrs)
+        if name != 'Plugin':
+            plugins[name] = cls
+        return cls
+
+class Plugin(metaclass=PluginMeta):
+    pass
+
+class MyPlugin(Plugin):
+    pass
+
+print(plugins)  # {'MyPlugin': <class MyPlugin>}
 \`\`\``,
+
     codeExamples: [
       {
         title: "Singleton метакласс",
@@ -937,11 +1462,87 @@ print(f"Created: {MyClass.instance_count}")`
     level: 7,
     title: "Дескрипторы",
     description: "__get__, __set__, __set_name__, валидация",
+    
+    cheatSheet: `# Простой дескриптор
+class Descriptor:
+    def __get__(self, obj, objtype=None):
+        return obj.__dict__.get(self.name)
+    
+    def __set__(self, obj, value):
+        obj.__dict__[self.name] = value
+    
+    def __set_name__(self, owner, name):
+        self.name = name
+
+class Person:
+    name = Descriptor()
+
+# Дескриптор с валидацией
+class Typed(Descriptor):
+    def __init__(self, type_):
+        self.type = type_
+    
+    def __set__(self, obj, value):
+        if not isinstance(value, self.type):
+            raise TypeError(f"Expected {self.type.__name__}")
+        super().__set__(obj, value)
+
+# Использование
+class Product:
+    name = Typed(str)
+    price = Typed(float)
+
+# Property как дескриптор
+@property
+def name(self):
+    return self._name
+
+@name.setter
+def name(self, value):
+    self._name = value`,
+
+    materials: [
+      {
+        type: "article",
+        title: "Descriptor HowTo Guide",
+        url: "https://docs.python.org/3/howto/descriptor.html",
+        description: "Официальное руководство"
+      },
+      {
+        type: "link",
+        title: "Real Python Descriptors",
+        url: "https://realpython.com/python-descriptors/",
+        description: "Подробный разбор с примерами"
+      }
+    ],
+
     theory: `# Дескрипторы
 
-## 1. Основы дескрипторов
+## 1. Что такое дескриптор?
 
-Дескриптор - это объект, который реализует методы __get__, __set__ или __delete__.
+**Дескриптор** - это объект, который реализует один из методов: \`__get__\`, \`__set__\`, \`__delete__\`.
+
+**Простыми словами:** Дескриптор позволяет перехватить доступ к атрибуту класса.
+
+## 2. Протокол дескриптора
+
+**__get__(self, obj, objtype=None):**
+- Вызывается при чтении атрибута
+- \`obj\` - экземпляр класса
+- \`objtype\` - класс
+
+**__set__(self, obj, value):**
+- Вызывается при записи атрибута
+- Если не реализован - атрибут только для чтения
+
+**__delete__(self, obj):**
+- Вызывается при удалении атрибута
+
+**__set_name__(self, owner, name):**
+- Вызывается при создании класса
+- Позволяет узнать имя атрибута
+
+## 3. Простой дескриптор
 
 \`\`\`python
 class Descriptor:
@@ -969,8 +1570,9 @@ print(p.name)  # "Alice"
 p.age = 26
 \`\`\`
 
-## 2. Валидация через дескрипторы
+## 4. Дескрипторы с валидацией
 
+**Проверка типа:**
 \`\`\`python
 class Typed(Descriptor):
     def __init__(self, type_):
@@ -981,24 +1583,30 @@ class Typed(Descriptor):
             raise TypeError(f"Expected {self.type.__name__}")
         super().__set__(obj, value)
 
+class Product:
+    name = Typed(str)
+    price = Typed(float)
+    
+    def __init__(self, name, price):
+        self.name = name
+        self.price = price
+\`\`\`
+
+**Проверка диапазона:**
+\`\`\`python
 class Positive(Descriptor):
     def __set__(self, obj, value):
         if value <= 0:
             raise ValueError("Must be positive")
         super().__set__(obj, value)
 
-class Product:
-    name = Typed(str)
-    price = Typed(float)
+class Order:
     quantity = Positive()
-    
-    def __init__(self, name, price, quantity):
-        self.name = name
-        self.price = price
-        self.quantity = quantity
 \`\`\`
 
-## 3. Property как дескриптор
+## 5. Property как дескриптор
+
+Встроенный \`@property\` - это тоже дескриптор:
 
 \`\`\`python
 class Circle:
@@ -1019,6 +1627,7 @@ class Circle:
     def area(self):
         return 3.14 * self._radius ** 2
 \`\`\``,
+
     codeExamples: [
       {
         title: "Типизированный дескриптор",
@@ -1102,11 +1711,11 @@ print(f"Name: {p.name}")`
 ];
 
 // Поиск по темам
-export function searchTopics(query: string) {
+export function searchTopics(query: string, topicsList: typeof PYTHON_TOPICS) {
   const lowerQuery = query.toLowerCase();
   const results = [];
   
-  for (const topic of PYTHON_TOPICS) {
+  for (const topic of topicsList) {
     // Поиск в заголовке
     if (topic.title.toLowerCase().includes(lowerQuery)) {
       results.push({ ...topic, matchType: 'title' });
@@ -1122,6 +1731,12 @@ export function searchTopics(query: string) {
     // Поиск в теории
     if (topic.theory.toLowerCase().includes(lowerQuery)) {
       results.push({ ...topic, matchType: 'theory' });
+      continue;
+    }
+    
+    // Поиск в подсказках
+    if (topic.cheatSheet.toLowerCase().includes(lowerQuery)) {
+      results.push({ ...topic, matchType: 'cheatSheet' });
       continue;
     }
     

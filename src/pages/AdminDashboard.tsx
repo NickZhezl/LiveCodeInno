@@ -17,13 +17,14 @@ import {
   Card,
   Icon,
 } from "@chakra-ui/react";
-import { FiUsers, FiCheckSquare, FiTrendingUp } from "react-icons/fi";
+import { FiUsers, FiCheckSquare, FiBook } from "react-icons/fi";
 import { collection, getDocs } from "firebase/firestore";
 import { firestore } from "../main";
 import { useAuth } from "../contexts/AuthContext";
 import UserProgressPanel from "../components/admin/UserProgressPanel";
 import HomeworkManagement from "../components/admin/HomeworkManagement";
 import SubmissionsReview from "../components/admin/SubmissionsReview";
+import TopicsManagement from "../components/admin/TopicsManagement";
 
 interface UserData {
   uid: string;
@@ -36,7 +37,7 @@ interface UserData {
 export default function AdminDashboard() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const [activeView, setActiveView] = useState<"dashboard" | "progress" | "homework" | "reviews">("dashboard");
+  const [activeView, setActiveView] = useState<"dashboard" | "progress" | "homework" | "reviews" | "topics">("dashboard");
   
   const { logout, userData } = useAuth();
   const toast = useToast();
@@ -52,6 +53,10 @@ export default function AdminDashboard() {
 
   if (activeView === "reviews") {
     return <SubmissionsReview onBack={() => setActiveView("dashboard")} />;
+  }
+
+  if (activeView === "topics") {
+    return <TopicsManagement onBack={() => setActiveView("dashboard")} />;
   }
 
   if (activeView === "homework") {
@@ -141,11 +146,15 @@ export default function AdminDashboard() {
           </Stat>
           <Stat bg="rgba(255, 255, 255, 0.05)" p={6} borderRadius="xl">
             <HStack justify="space-between" mb={2}>
-              <Icon as={FiTrendingUp} w={8} h={8} color="purple.400" />
-              <StatNumber color="white" fontSize="xl">Online</StatNumber>
+              <Icon as={FiBook} w={8} h={8} color="green.400" />
+              <StatNumber color="white" fontSize="3xl">Темы</StatNumber>
             </HStack>
-            <StatLabel color="gray.400">Система</StatLabel>
-            <StatHelpText color="gray.500">Все системы работают</StatHelpText>
+            <StatLabel color="gray.400">Python</StatLabel>
+            <StatHelpText color="gray.500">
+              <Button size="xs" colorScheme="green" onClick={() => setActiveView("topics")}>
+                Редактор →
+              </Button>
+            </StatHelpText>
           </Stat>
         </SimpleGrid>
 
