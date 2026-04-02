@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { Box, Button, VStack, Heading, HStack } from "@chakra-ui/react";
 import getRecordings from "../services/getRecording";
 import requestGenerateTranscript from "../services/requestGenerateTranscript";
 import getTranscript from "../services/getTranscript";
@@ -13,7 +15,12 @@ import styles from "../styles/reportHeader.module.css";
 import { firestore } from "../main";
 import { collection, getDocs } from "firebase/firestore";
 
-const InterviewReportComponent = () => {
+interface InterviewReportComponentProps {
+  initialRoomId?: string | null;
+}
+
+const InterviewReportComponent = ({ initialRoomId }: InterviewReportComponentProps) => {
+  const { roomId: urlRoomId } = useParams<{ roomId: string }>();
   const [recordId, setRecordId] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
 
@@ -50,10 +57,12 @@ const InterviewReportComponent = () => {
 
   // Execute on first render
   useEffect(() => {
-    // Get the URL params
-    const params = new URLSearchParams(window.location.search);
-    setRoomId(params.get("roomId"));
-  }, []);
+    // Get the roomId from URL params or prop
+    const finalRoomId = urlRoomId || initialRoomId;
+    if (finalRoomId) {
+      setRoomId(finalRoomId);
+    }
+  }, [urlRoomId, initialRoomId]);
 
   // Execute when the roomId changes
   useEffect(() => {
@@ -276,7 +285,27 @@ const InterviewReportComponent = () => {
   }, [recordId]);
 
   return (
-    <div className={styles.container}>
+    <Box minH="100vh" bg="#0f0a19" color="gray.500" p={8}>
+      {/* Header with Back button */}
+      <VStack spacing={4} mb={8}>
+        <HStack justify="space-between" w="100%" maxW="1200px">
+          <Link to="/">
+            <Button
+              bg="rgba(255,255,255, 0.1)"
+              color="white"
+              _hover={{ bg: "rgba(255,255,255, 0.2)" }}
+            >
+              ← Back to Editor
+            </Button>
+          </Link>
+          <Heading fontSize="xl" color="white">
+            Interview Report - Room: {roomId || "N/A"}
+          </Heading>
+          <Box w="150px" /> {/* Spacer for centering */}
+        </HStack>
+      </VStack>
+
+      <div className={styles.container}>
       <div className={styles.reportHeader}>
         <div className={styles.reportHeaderContent}>
           <h3>Room ID - </h3>
@@ -386,6 +415,7 @@ const InterviewReportComponent = () => {
         ))}
       </CollapsibleText>
     </div>
+    </Box>
   );
 };
 

@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 // Добавили Text в импорты для заголовка
-import { Input, Button, Select, Text, Box } from "@chakra-ui/react"; 
+import { Input, Button, Select, Text, Box } from "@chakra-ui/react";
 import styles from "../styles/buttons.module.css";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../main";
 import { LANGUAGE_VERSIONS } from "../constants";
+import { useAuth } from "../contexts/AuthContext";
 
-const UserInput = ({ setUserID, setRoomID }: any) => {
-  const [inputValue, setInputValue] = useState("");
+const UserInput = ({ setRoomID }: any) => {
   const [roomID, setInputRoomID] = useState<string>("");
   const [language, setLanguage] = useState("javascript");
+  const { userData } = useAuth();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -46,7 +47,7 @@ const UserInput = ({ setUserID, setRoomID }: any) => {
       console.error("Error saving language preference:", error);
     }
 
-    setUserID(inputValue);
+    // setUserID is now used to set roomID (user is from auth)
     setRoomID(roomID);
   };
 
@@ -55,17 +56,12 @@ const UserInput = ({ setUserID, setRoomID }: any) => {
       <div className={styles.groupInputs}>
         <h2 style={{ color: "white", fontSize: 24, marginBottom: 24 }}>Live Code Interviewer</h2>
         
-        <Input
-          className={styles.defaultInputs}
-          type="text"
-          width="auto"
-          placeholder="Name"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          // Принудительно задаем стили, чтобы перекрыть возможные конфликты
-          sx={{ bg: "#1a1a2e", border: "1px solid #333", color: "white", _placeholder: { color: "gray.500" } }}
-        />
-        
+        {userData && (
+          <Box mb={4} color="gray.400" fontSize="sm">
+            Logged in as: <Text as="span" color="white" fontWeight="bold">{userData.displayName}</Text>
+          </Box>
+        )}
+
         <Input
           type="text"
           className={styles.defaultInputs}

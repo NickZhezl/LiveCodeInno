@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(firebase *)",
+      "Bash(npm uninstall *)"
+    ]
+  },
+  "$version": 3
+}

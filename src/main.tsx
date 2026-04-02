@@ -7,9 +7,10 @@ import theme from "./theme";
 // 1. Импорты Firebase
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore"; // <-- Добавили это
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
-// 2. Ваша НОВАЯ конфигурация
+// 2. Ваша НОВАЯ конфигурацияН
 const firebaseConfig = {
   apiKey: "AIzaSyAdPx1Uxxx0F2Cb-5m5DanVhYrQAwq8cV0",
   authDomain: "live-code-project.firebaseapp.com",
@@ -23,9 +24,10 @@ const firebaseConfig = {
 // 3. Инициализация
 const app = initializeApp(firebaseConfig);
 
-// Экспортируем firestore, чтобы его видели другие файлы
-export const firestore = getFirestore(app); 
+// Экспортируем firestore и auth, чтобы их видели другие файлы
+export const firestore = getFirestore(app);
 export const analytics = getAnalytics(app);
+export const auth = getAuth(app);
 
 console.log("Firebase initialized for: Live Code project");
 

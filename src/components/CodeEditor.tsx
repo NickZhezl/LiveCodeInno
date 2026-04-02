@@ -7,6 +7,7 @@ import Timer from "./Timer";
 import * as monaco from "monaco-editor";
 import { firestore } from "../main";
 import { doc, setDoc, onSnapshot, collection, serverTimestamp } from "firebase/firestore";
+import { executePythonLocal as localExecute } from "../utils/localExecutor";
 
 // Функция генерации цвета
 const stringToColor = (str: string) => {
@@ -88,18 +89,26 @@ INSERT INTO employees VALUES (3, 'Charlie', 55000);
   }
 ];
 
+// Используем локальное выполнение кода вместо Piston API
 const executeCode = async (language: string, sourceCode: string) => {
-  const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      language: language === "sql" ? "sqlite3" : language, // Маппинг для Piston
-      version: "*",
-      files: [{ content: sourceCode }],
-    }),
-  });
-  const data = await response.json();
-  return data; // Возвращает объект { run: { stdout: "...", stderr: "..." } }
+  if (language === "python") {
+    // localExecute возвращает { stdout, stderr, success }
+    const result = await localExecute(sourceCode);
+    return {
+      run: {
+        stdout: result.stdout,
+        stderr: result.stderr,
+      },
+    };
+  }
+  
+  // Для других языков пока заглушка
+  return {
+    run: {
+      stdout: `Выполнение ${language} временно недоступно. Используйте Python.`,
+      stderr: "",
+    },
+  };
 };
 
 const CodeEditor = ({ roomId, userName }: { roomId: string; userName: string }) => {
