@@ -29,108 +29,37 @@ import {
   addDoc,
 } from "firebase/firestore";
 import { useAuth } from "../contexts/AuthContext";
+import { executePythonLocal } from "../utils/localExecutor";
 
 interface LiveCodingProps {
   onBack: () => void;
   initialRoomId?: string;
 }
 
-// JavaScript code interpreter using Function constructor (sandboxed)
-const executeJavaScript = async (code: string): Promise<{
-  stdout: string;
-  stderr: string;
-  success: boolean;
-}> => {
-  return new Promise((resolve) => {
-    let stdout = "";
-    let stderr = "";
-    let success = true;
-
-    try {
-      // Create a custom console to capture output
-      const customConsole = {
-        log: (...args: any[]) => {
-          stdout += args
-            .map((arg) =>
-              typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-            )
-            .join(" ") + "\n";
-        },
-        error: (...args: any[]) => {
-          stderr += args
-            .map((arg) =>
-              typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-            )
-            .join(" ") + "\n";
-        },
-        warn: (...args: any[]) => {
-          stdout += "[WARN] " + args.join(" ") + "\n";
-        },
-        info: (...args: any[]) => {
-          stdout += "[INFO] " + args.join(" ") + "\n";
-        },
-      };
-
-      // Create a safe execution context
-      const runCode = new Function(
-        "console",
-        `
-        "use strict";
-        try {
-          ${code}
-        } catch (e) {
-          throw e;
-        }
-      `
-      );
-
-      runCode(customConsole);
-    } catch (error: any) {
-      stderr = error.message || "Unknown error";
-      success = false;
-    }
-
-    resolve({
-      stdout: stdout.trim(),
-      stderr: stderr.trim(),
-      success,
-    });
-  });
-};
-
 export default function LiveCoding({ onBack, initialRoomId }: LiveCodingProps) {
   const { userData, isAdmin } = useAuth();
-  const [code, setCode] = useState<string>(`// Live Coding - JavaScript Песочница
-// Пишите любой код здесь и нажимайте "Выполнить"
+  const [code, setCode] = useState<string>(`# Live Coding - Python Песочница
+# Пишите любой код здесь и нажимайте "Выполнить"
 
-// Пример 1: Переменные и типы данных
-const name = "JavaScript Developer";
-const age = 25;
-const skills = ["JavaScript", "TypeScript", "React"];
+# Пример 1: Переменные
+name = "Python Developer"
+age = 25
+skills = ["Python", "JavaScript", "SQL"]
 
-console.log(\`Привет, \${name}!\`);
-console.log(\`Возраст: \${age}\`);
-console.log(\`Навыки: \${skills.join(", ")}\`);
+print(f"Привет, {name}!")
+print(f"Возраст: {age}")
+print(f"Навыки: {skills}")
 
-// Пример 2: Функции
-function greet(person) {
-  return \`Hello, \${person}!\`;
-}
+# Пример 2: Функции
+def greet(person):
+    return f"Hello, {person}!"
 
-console.log(greet("World"));
+print(greet("World"))
 
-// Пример 3: Массивы и методы
-const numbers = [1, 2, 3, 4, 5];
-const squares = numbers.map(x => x ** 2);
-console.log(\`Квадраты: \${squares}\`);
-
-// Пример 4: Асинхронность
-async function fetchData() {
-  console.log("Загрузка данных...");
-  return { data: "success" };
-}
-
-fetchData().then(result => console.log(result));
+# Пример 3: Списки
+numbers = [1, 2, 3, 4, 5]
+squares = [x**2 for x in numbers]
+print(f"Квадраты: {squares}")
 `);
   const [output, setOutput] = useState<string>("");
   const [error, setError] = useState<string>("");
@@ -162,7 +91,7 @@ fetchData().then(result => console.log(result));
     setError("");
 
     try {
-      const result = await executeJavaScript(code);
+      const result = await executePythonLocal(code);
 
       if (result.stderr) {
         setError(result.stderr);
@@ -198,7 +127,7 @@ fetchData().then(result => console.log(result));
     try {
       const newRoomRef = await addDoc(collection(firestore, "rooms"), {
         code: code,
-        language: "javascript",
+        language: "python",
         createdAt: serverTimestamp(),
         createdBy: userData.uid,
         creatorName: userData.displayName,
@@ -267,172 +196,121 @@ fetchData().then(result => console.log(result));
   // Load example code
   const loadExample = (example: string) => {
     const examples: Record<string, string> = {
-      basic: `// Основы JavaScript
-// Переменные и типы данных
+      basic: `# Основы Python
+# Переменные и типы данных
 
-// let, const, var
-let age = 25;
-const name = "Alice";
-var oldStyle = "deprecated";
+# Переменные
+age = 25
+name = "Alice"
 
-// Типы данных
-const string = "Hello";
-const number = 42;
-const boolean = true;
-const nullValue = null;
-const undefinedValue = undefined;
-const array = [1, 2, 3];
-const object = { key: "value" };
+# Типы данных
+string_var = "Hello"
+number = 42
+boolean = True
+null_value = None
+array = [1, 2, 3]
+object_var = {"key": "value"}
 
-console.log("=== Типы данных ===");
-console.log(\`String: \${typeof string} = \${string}\`);
-console.log(\`Number: \${typeof number} = \${number}\`);
-console.log(\`Boolean: \${typeof boolean} = \${boolean}\`);
-console.log(\`Array: \${Array.isArray(array) ? "array" : "not array"} = \${array}\`);
-console.log(\`Object: \${typeof object} = \${JSON.stringify(object)}\`);
+print("=== Типы данных ===")
+print(f"String: {type(string_var).__name__} = {string_var}")
+print(f"Number: {type(number).__name__} = {number}")
+print(f"Boolean: {type(boolean).__name__} = {boolean}")
+print(f"Array: {type(array).__name__} = {array}")
+print(f"Object: {type(object_var).__name__} = {object_var}")
 `,
-      functions: `// Функции JavaScript
+      functions: `# Функции Python
 
-// Function Declaration
-function greet(name) {
-  return \`Hello, \${name}!\`;
-}
+# Простая функция
+def greet(name):
+    return f"Hello, {name}!"
 
-// Function Expression
-const greetExpr = function(name) {
-  return \`Hi, \${name}!\`;
-};
+# Функция с параметром по умолчанию
+def greet_default(name="Guest"):
+    return f"Hello, {name}!"
 
-// Arrow Function
-const greetArrow = (name) => \`Hey, \${name}!\`;
+# Функция с произвольным числом аргументов
+def sum_all(*numbers):
+    return sum(numbers)
 
-// Arrow Function с телом
-const greetMulti = (name) => {
-  const greeting = \`Welcome, \${name}!\`;
-  return greeting;
-};
+# Лямбда-функция
+square = lambda x: x ** 2
 
-// Параметры по умолчанию
-function greetDefault(name = "Guest") {
-  return \`Hello, \${name}!\`;
-}
-
-// Rest параметры
-function sumAll(...numbers) {
-  return numbers.reduce((sum, n) => sum + n, 0);
-}
-
-console.log(greet("Alice"));
-console.log(greetExpr("Bob"));
-console.log(greetArrow("Charlie"));
-console.log(greetMulti("David"));
-console.log(greetDefault());
-console.log(\`Sum: \${sumAll(1, 2, 3, 4, 5)}\`);
+print(greet("Alice"))
+print(greet_default())
+print(f"Sum: {sum_all(1, 2, 3, 4, 5)}")
+print(f"5^2 = {square(5)}")
 `,
-      arrays: `// Массивы и методы
+      arrays: `# Списки и методы
 
-const numbers = [1, 2, 3, 4, 5];
-const fruits = ["apple", "banana", "cherry"];
+numbers = [1, 2, 3, 4, 5]
+fruits = ["apple", "banana", "cherry"]
 
-console.log("=== Базовые операции ===");
-console.log(\`Длина: \${numbers.length}\`);
-console.log(\`Первый: \${numbers[0]}\`);
-console.log(\`Последний: \${numbers[numbers.length - 1]}\`);
+print("=== Базовые операции ===")
+print(f"Длина: {len(numbers)}")
+print(f"Первый: {numbers[0]}")
+print(f"Последний: {numbers[-1]}")
 
-console.log("\\n=== Методы массивов ===");
-console.log(\`map: \${numbers.map(x => x * 2)}\`);
-console.log(\`filter: \${numbers.filter(x => x > 2)}\`);
-console.log(\`reduce: \${numbers.reduce((sum, n) => sum + n, 0)}\`);
-console.log(\`find: \${numbers.find(x => x > 3)}\`);
-console.log(\`some: \${numbers.some(x => x > 4)}\`);
-console.log(\`every: \${numbers.every(x => x > 0)}\`);
+print("\\n=== Методы списков ===")
+print(f"map: {[x * 2 for x in numbers]}")
+print(f"filter: {[x for x in numbers if x > 2]}")
+print(f"reduce: {sum(numbers)}")
+print(f"find: {next((x for x in numbers if x > 3), None)}")
 
-console.log("\\n=== Цепочки методов ===");
-const result = numbers
-  .filter(x => x % 2 === 1)
-  .map(x => x ** 2)
-  .reduce((sum, n) => sum + n, 0);
-console.log(\`Сумма квадратов нечетных: \${result}\`);
+print("\\n=== Цепочки методов ===")
+result = sum(x ** 2 for x in numbers if x % 2 == 1)
+print(f"Сумма квадратов нечетных: {result}")
 `,
-      async: `// Асинхронность
+      async: `# Асинхронность Python
+import asyncio
 
-// Promise
-const promise = new Promise((resolve, reject) => {
-  setTimeout(() => {
-    resolve("Promise resolved!");
-  }, 1000);
-});
+async def fetchData():
+    print("Начало загрузки...")
+    await asyncio.sleep(0.5)
+    print("Данные получены: {'id': 1, 'name': 'Data'}")
+    return {'id': 1, 'name': 'Data'}
 
-// Async/Await
-async function fetchData() {
-  console.log("Начало загрузки...");
-  
-  const data = await new Promise(resolve => {
-    setTimeout(() => {
-      resolve({ id: 1, name: "Data" });
-    }, 500);
-  });
-  
-  console.log("Данные получены:", data);
-  return data;
-}
+async def fetch_multiple():
+    results = await asyncio.gather(
+        asyncio.create_task(asyncio.sleep(0.1, result="Data 1")),
+        asyncio.create_task(asyncio.sleep(0.1, result="Data 2"))
+    )
+    print(f"Multiple: {results}")
 
-// Multiple promises
-async function fetchMultiple() {
-  const [data1, data2] = await Promise.all([
-    Promise.resolve("Data 1"),
-    Promise.resolve("Data 2")
-  ]);
-  
-  console.log("Multiple:", data1, data2);
-}
-
-console.log("Запуск асинхронных операций...");
-fetchData();
-fetchMultiple();
-
-promise.then(result => console.log(result));
+print("Запуск асинхронных операций...")
+# asyncio.run(fetch_data())  # Раскомментируйте для запуска
 `,
-      oop: `// Классы и ООП
+      oop: `# Классы и ООП
 
-class Person {
-  constructor(name, age) {
-    this.name = name;
-    this.age = age;
-  }
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
 
-  greet() {
-    return \`Hello, I'm \${this.name}\`;
-  }
+    def greet(self):
+        return f"Hello, I'm {self.name}"
 
-  static species() {
-    return "Homo Sapiens";
-  }
-}
+    @staticmethod
+    def species():
+        return "Homo Sapiens"
 
-class Student extends Person {
-  constructor(name, age, grade) {
-    super(name, age);
-    this.grade = grade;
-  }
+class Student(Person):
+    def __init__(self, name, age, grade):
+        super().__init__(name, age)
+        self.grade = grade
 
-  study() {
-    return \`\${this.name} изучает JavaScript\`;
-  }
+    def study(self):
+        return f"{self.name} изучает Python"
 
-  // Переопределение метода
-  greet() {
-    return \`\${super.greet()}, a student\`;
-  }
-}
+    def greet(self):
+        return f"{super().greet()}, a student"
 
-const alice = new Person("Alice", 25);
-const bob = new Student("Bob", 20, "A");
+alice = Person("Alice", 25)
+bob = Student("Bob", 20, "A")
 
-console.log(alice.greet());
-console.log(bob.greet());
-console.log(bob.study());
-console.log(\`Species: \${Person.species()}\`);
+print(alice.greet())
+print(bob.greet())
+print(bob.study())
+print(f"Species: {Person.species()}")
 `,
     };
 
@@ -598,8 +476,8 @@ console.log(\`Species: \${Person.species()}\`);
   ) => {
     editorRef.current = editor;
 
-    // JavaScript autocompletion
-    monacoInstance.languages.registerCompletionItemProvider("javascript", {
+    // Python autocompletion
+    monacoInstance.languages.registerCompletionItemProvider("python", {
       provideCompletionItems: (model, position) => {
         const word = model.getWordUntilPosition(position);
         const range = {
@@ -611,25 +489,41 @@ console.log(\`Species: \${Person.species()}\`);
         return {
           suggestions: [
             {
-              label: "console.log",
+              label: "print",
               kind: monacoInstance.languages.CompletionItemKind.Function,
-              insertText: "console.log(${1:value})",
+              insertText: "print(${1:value})",
               insertTextRules:
                 monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               range,
             },
             {
-              label: "function",
+              label: "def",
               kind: monacoInstance.languages.CompletionItemKind.Keyword,
-              insertText: "function ${1:name}(${2:args}) {\\n\\t${3:}\\n}",
+              insertText: "def ${1:func_name}(${2:args}):\n\t${3:pass}",
               insertTextRules:
                 monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               range,
             },
             {
-              label: "const",
+              label: "class",
               kind: monacoInstance.languages.CompletionItemKind.Keyword,
-              insertText: "const ${1:name} = ${2:value};",
+              insertText: "class ${1:ClassName}:\n\tdef __init__(self, ${2:args}):\n\t\t${3:pass}",
+              insertTextRules:
+                monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              range,
+            },
+            {
+              label: "for loop",
+              kind: monacoInstance.languages.CompletionItemKind.Snippet,
+              insertText: "for ${1:item} in ${2:iterable}:\n\t${3:pass}",
+              insertTextRules:
+                monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              range,
+            },
+            {
+              label: "if",
+              kind: monacoInstance.languages.CompletionItemKind.Keyword,
+              insertText: "if ${1:condition}:\n\t${2:pass}",
               insertTextRules:
                 monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               range,
@@ -638,7 +532,7 @@ console.log(\`Species: \${Person.species()}\`);
               label: "async/await",
               kind: monacoInstance.languages.CompletionItemKind.Snippet,
               insertText:
-                "async function ${1:name}() {\\n\\ttry {\\n\\t\\t${2:await promise}\\n\\t} catch (error) {\\n\\t\\t${3:console.error(error)}\\n\\t}\\n}",
+                "async def ${1:func_name}():\n\ttry:\n\t\t${2:await something}\n\texcept Exception as e:\n\t\t${3:print(e)}",
               insertTextRules:
                 monacoInstance.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               range,
@@ -679,7 +573,7 @@ console.log(\`Species: \${Person.species()}\`);
                 ← Назад
               </Button>
               <Heading fontSize="2xl" color="white">
-                Live Coding - JavaScript
+                Live Coding - Python
               </Heading>
               {roomId && (
                 <Badge colorScheme="purple" fontSize="md" px={3} py={1}>
@@ -854,7 +748,7 @@ console.log(\`Species: \${Person.species()}\`);
             <Editor
               height="500px"
               theme="vs-dark"
-              language="javascript"
+              language="python"
               value={code}
               onChange={handleEditorChange}
               onMount={onMount}
