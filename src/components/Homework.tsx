@@ -11,11 +11,12 @@ import {
   useToast,
   Icon,
 } from "@chakra-ui/react";
-import { FiCheckCircle, FiXCircle, FiBook } from "react-icons/fi";
+import { FiCheckCircle, FiXCircle, FiBook, FiChevronDown, FiChevronRight } from "react-icons/fi";
 import { Editor } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 import { HOMEWORK_TASKS } from "../data/homeworkTasks";
 import { executeCode } from "../utils/codeExecutor";
+import { runPytest } from "../utils/pytestRunner";
 import { useAuth } from "../contexts/AuthContext";
 import { firestore } from "../main";
 import { doc, setDoc, collection, serverTimestamp, arrayUnion } from "firebase/firestore";
@@ -28,7 +29,13 @@ export default function Homework({ onBack }: HomeworkProps) {
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
   const [code, setCode] = useState<string>("");
   const [isChecking, setIsChecking] = useState(false);
-  const [testResults, setTestResults] = useState<{ passed: boolean; output: string } | null>(null);
+  const [testResults, setTestResults] = useState<{ 
+    passed: boolean; 
+    output: string;
+    pytestResults?: any;
+    testDetails?: Array<{name: string; passed: boolean; error?: string}>;
+  } | null>(null);
+  const [expandedTest, setExpandedTest] = useState<number | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const { userData } = useAuth();
   const toast = useToast();
@@ -60,11 +67,31 @@ export default function Homework({ onBack }: HomeworkProps) {
     setTestResults(null);
 
     try {
-      // Выполняем код и сравниваем вывод
-      const result = await executeCode("python", code);
-      const userOutput = result.run.stdout.trim();
-      const expectedOutput = (selectedTask as any).expectedOutput?.trim() || "";
-      const passed = userOutput === expectedOutput;
+      let passed = false;
+      let output = "";
+      let testDetails: Array<{name: string; passed: boolean; error?: string}> = [];
+
+      // Check if task has pytest tests
+      if (selectedTask.pytestCode) {
+        // Use pytest runner
+        const pytestResult = await runPytest(code, selectedTask.pytestCode);
+        passed = pytestResult.success;
+        output = pytestResult.success 
+          ? `✅ Все тесты пройдены! (${pytestResult.passed}/${pytestResult.total})`
+          : `❌ Тесты не пройдены (${pytestResult.failed}/${pytestResult.total} провалено)`;
+        testDetails = pytestResult.tests.map(t => ({
+          name: t.name,
+          passed: t.passed,
+          error: t.error,
+        }));
+      } else {
+        // Fallback to old output comparison method
+        const result = await executeCode("python", code);
+        const userOutput = result.run.stdout.trim();
+        const expectedOutput = (selectedTask as any).expectedOutput?.trim() || "";
+        passed = userOutput === expectedOutput;
+        output = passed ? "Вывод совпадает!" : `Ожидалось:\n${expectedOutput}\n\nПолучено:\n${userOutput}`;
+      }
 
       // Save progress to Firestore
       const submissionRef = doc(collection(firestore, "submissions"));
@@ -72,8 +99,7 @@ export default function Homework({ onBack }: HomeworkProps) {
         userId: userData.uid,
         taskId: selectedTask.id,
         code: code,
-        output: userOutput,
-        expectedOutput: expectedOutput,
+        output: output,
         passed: passed,
         timestamp: serverTimestamp(),
       });
@@ -89,9 +115,9 @@ export default function Homework({ onBack }: HomeworkProps) {
         }),
       }, { merge: true });
 
-      setTestResults({ passed, output: passed ? "Вывод совпадает!" : `Ожидалось:\n${expectedOutput}\n\nПолучено:\n${userOutput}` });
+      setTestResults({ passed, output, testDetails });
       toast({
-        title: passed ? "Задание выполнено!" : "Вывод не совпадает",
+        title: passed ? "Задание выполнено!" : "Тесты не пройдены",
         status: passed ? "success" : "error",
       });
     } catch (error) {
@@ -238,24 +264,84 @@ export default function Homework({ onBack }: HomeworkProps) {
                   bg={testResults.passed ? "green.900" : "red.900"}
                   borderLeft={`4px solid ${testResults.passed ? "green" : "red"}`}
                 >
-                  <HStack spacing={2} mb={2}>
+                  <HStack spacing={2} mb={3}>
                     <Icon as={testResults.passed ? FiCheckCircle : FiXCircle} w={5} h={5} color="white" />
-                    <Text fontWeight="bold" color="white">
-                      {testResults.passed ? "Тесты пройдены!" : "Тесты не пройдены"}
+                    <Text fontWeight="bold" color="white" fontSize="lg">
+                      {testResults.passed ? "✅ Тесты пройдены!" : "❌ Тесты не пройдены"}
                     </Text>
                   </HStack>
-                  <Box
-                    as="pre"
-                    bg="rgba(0,0,0,0.3)"
-                    p={3}
-                    borderRadius="md"
-                    color="gray.200"
-                    fontSize="sm"
-                    maxH="200px"
-                    overflowY="auto"
-                  >
-                    {testResults.output}
-                  </Box>
+
+                  {/* Show individual test details if available */}
+                  {testResults.testDetails && testResults.testDetails.length > 0 && (
+                    <VStack spacing={2} align="stretch" mb={3}>
+                      <Text color="white" fontWeight="bold" fontSize="sm">
+                        Результаты тестов:
+                      </Text>
+                      {testResults.testDetails.map((test, idx) => (
+                        <Box key={idx}>
+                          <HStack
+                            justify="space-between"
+                            p={2}
+                            bg={test.passed ? "rgba(0,255,0,0.1)" : "rgba(255,0,0,0.1)"}
+                            borderRadius="md"
+                            cursor={test.error ? "pointer" : "default"}
+                            onClick={() => test.error && setExpandedTest(expandedTest === idx ? null : idx)}
+                          >
+                            <HStack spacing={2}>
+                              <Icon
+                                as={test.passed ? FiCheckCircle : FiXCircle}
+                                color={test.passed ? "green.400" : "red.400"}
+                                w={4}
+                                h={4}
+                              />
+                              <Text color="gray.200" fontSize="sm" fontWeight="medium">
+                                {test.name}
+                              </Text>
+                            </HStack>
+                            {test.error && (
+                              <Icon
+                                as={expandedTest === idx ? FiChevronDown : FiChevronRight}
+                                color="gray.400"
+                              />
+                            )}
+                          </HStack>
+                          {test.error && expandedTest === idx && (
+                            <Box
+                              bg="rgba(0,0,0,0.3)"
+                              p={3}
+                              mt={1}
+                              borderRadius="md"
+                              fontSize="xs"
+                              fontFamily="mono"
+                              color="red.300"
+                              whiteSpace="pre-wrap"
+                              maxH="150px"
+                              overflowY="auto"
+                            >
+                              {test.error}
+                            </Box>
+                          )}
+                        </Box>
+                      ))}
+                    </VStack>
+                  )}
+
+                  {/* Legacy output display */}
+                  {!testResults.testDetails && (
+                    <Box
+                      as="pre"
+                      bg="rgba(0,0,0,0.3)"
+                      p={3}
+                      borderRadius="md"
+                      color="gray.200"
+                      fontSize="sm"
+                      maxH="200px"
+                      overflowY="auto"
+                      whiteSpace="pre-wrap"
+                    >
+                      {testResults.output}
+                    </Box>
+                  )}
                 </Box>
               )}
             </VStack>

@@ -353,7 +353,7 @@ export default function Topics({ onBack }: TopicsProps) {
                   </Text>
                   <VStack spacing={3} align="stretch">
                     {selectedTopic.tasks.map((task, idx) => (
-                      <Card
+                      <Box
                         key={idx}
                         bg="rgba(255,255,255,0.05)"
                         borderRadius="xl"
@@ -379,7 +379,7 @@ export default function Topics({ onBack }: TopicsProps) {
                             {task.expectedOutput}
                           </Box>
                         </Box>
-                      </Card>
+                      </Box>
                     ))}
                   </VStack>
                 </Box>
@@ -406,8 +406,4 @@ export default function Topics({ onBack }: TopicsProps) {
       </HStack>
     </Box>
   );
-}
-
-function Card({ children, ...props }: any) {
-  return <Box {...props}>{children}</Box>;
 }

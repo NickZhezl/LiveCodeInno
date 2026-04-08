@@ -63,6 +63,7 @@ print(f"Квадраты: {squares}")
 `);
   const [output, setOutput] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [lastExecutedBy, setLastExecutedBy] = useState<string>("");
   const [isRunning, setIsRunning] = useState(false);
   const [roomId, setRoomId] = useState<string>(initialRoomId || "");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
@@ -73,6 +74,26 @@ print(f"Квадраты: {squares}")
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const toast = useToast();
   const decorationIds = useRef<string[]>([]);
+  const isRemoteUpdate = useRef(false); // Track if update is from Firestore
+
+  // Handle initialRoomId changes (from URL)
+  useEffect(() => {
+    if (initialRoomId && initialRoomId !== roomId && userData) {
+      setRoomId(initialRoomId);
+      // Create room in Firestore if it doesn't exist
+      const roomRef = doc(firestore, "rooms", initialRoomId);
+      getDoc(roomRef).then((docSnap) => {
+        if (!docSnap.exists()) {
+          setDoc(roomRef, {
+            code: code,
+            language: "python",
+            createdAt: serverTimestamp(),
+            createdBy: userData.displayName || "Anonymous",
+          }, { merge: true });
+        }
+      });
+    }
+  }, [initialRoomId, userData]);
 
   // Generate color from string
   const stringToColor = (str: string) => {
@@ -93,15 +114,46 @@ print(f"Квадраты: {squares}")
     try {
       const result = await executePythonLocal(code);
 
+      // Save result to Firestore for sync
+      const roomRef = doc(firestore, "rooms", roomId);
+      const execResult = {
+        output: result.stdout || "",
+        error: result.stderr || "",
+        executedBy: userData?.displayName || "Anonymous",
+        executedAt: serverTimestamp(),
+        code: code,
+      };
+      await setDoc(roomRef, { lastExecution: execResult }, { merge: true });
+
+      // Update local state
+      setLastExecutedBy(userData?.displayName || "Anonymous");
       if (result.stderr) {
         setError(result.stderr);
+        setOutput("");
         toast({ title: "Ошибка выполнения", status: "error", duration: 5000 });
       } else {
         setOutput(result.stdout || "Код выполнен успешно (нет вывода)");
+        setError("");
         toast({ title: "Код выполнен!", status: "success" });
       }
     } catch (e: any) {
-      setError(e.message || "Неизвестная ошибка");
+      const errorMsg = e.message || "Неизвестная ошибка";
+      setError(errorMsg);
+      setOutput("");
+      setLastExecutedBy(userData?.displayName || "Anonymous");
+      
+      // Save error to Firestore
+      const roomRef = doc(firestore, "rooms", roomId);
+      await setDoc(roomRef, {
+        lastExecution: {
+          output: "",
+          error: errorMsg,
+          executedBy: userData?.displayName || "Anonymous",
+          executedAt: serverTimestamp(),
+          code: code,
+        },
+      }, { merge: true });
+      
       toast({ title: "Ошибка", status: "error" });
     } finally {
       setIsRunning(false);
@@ -184,7 +236,7 @@ print(f"Квадраты: {squares}")
   // Copy room link
   const copyRoomLink = async () => {
     if (!roomId) return;
-    const link = `${window.location.origin}/?room=${roomId}`;
+    const link = `${window.location.origin}/?roomId=${roomId}`;
     try {
       await navigator.clipboard.writeText(link);
       toast({ title: "Ссылка скопирована", status: "success" });
@@ -331,8 +383,14 @@ print(f"Species: {Person.species()}")
         if (data.code !== undefined && editorRef.current) {
           const currentValue = editorRef.current.getValue();
           if (currentValue !== data.code) {
+            // Mark as remote update to prevent sync loop
+            isRemoteUpdate.current = true;
             editorRef.current.setValue(data.code);
             setCode(data.code);
+            // Reset flag after a short delay
+            setTimeout(() => {
+              isRemoteUpdate.current = false;
+            }, 100);
           }
         }
       }
@@ -340,6 +398,41 @@ print(f"Species: {Person.species()}")
 
     return () => unsubscribe();
   }, [roomId]);
+
+  // Sync execution results with Firestore
+  useEffect(() => {
+    if (!roomId) return;
+
+    const roomRef = doc(firestore, "rooms", roomId);
+
+    const unsubscribe = onSnapshot(roomRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        // Check if there's a new execution result
+        if (data.lastExecution && data.lastExecution.executedAt) {
+          const execData = data.lastExecution;
+          
+          // Only update if this execution is from another user or different code
+          const isFromOtherUser = execData.executedBy !== userData?.displayName;
+          const isDifferentCode = execData.code !== code;
+          
+          if (isFromOtherUser || isDifferentCode) {
+            setLastExecutedBy(execData.executedBy || "Unknown");
+            if (execData.error) {
+              setError(execData.error);
+              setOutput("");
+            } else if (execData.output) {
+              setOutput(execData.output);
+              setError("");
+            }
+          }
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [roomId, userData, code]);
 
   // Sync cursors and participants
   useEffect(() => {
@@ -464,6 +557,10 @@ print(f"Species: {Person.species()}")
   // Save code to Firestore on change
   const handleEditorChange = (newValue: string | undefined) => {
     if (newValue === undefined || !roomId) return;
+    
+    // Don't save if this is a remote update (prevents sync loop)
+    if (isRemoteUpdate.current) return;
+    
     setCode(newValue);
     const roomRef = doc(firestore, "rooms", roomId);
     setDoc(roomRef, { code: newValue }, { merge: true }).catch(console.error);
@@ -788,9 +885,16 @@ print(f"Species: {Person.species()}")
         {/* Output */}
         <Box flex={1} maxW="600px">
           <VStack spacing={4} align="stretch">
-            <Text color="white" fontWeight="bold">
-              Результат:
-            </Text>
+            <HStack justify="space-between">
+              <Text color="white" fontWeight="bold">
+                Результат:
+              </Text>
+              {lastExecutedBy && (
+                <Badge colorScheme="blue" fontSize="xs">
+                  👤 {lastExecutedBy}
+                </Badge>
+              )}
+            </HStack>
 
             <Box
               bg="rgba(0,0,0,0.5)"

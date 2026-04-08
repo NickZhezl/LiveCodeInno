@@ -23,11 +23,17 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
-      
+
       // User progress subcollection
       match /progress/{document=**} {
         allow read: if isAuthenticated();
         allow write: if isAuthenticated();
+      }
+
+      // User achievements subcollection
+      match /achievements/{document=**} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId);
       }
     }
     
@@ -86,7 +92,69 @@ service cloud.firestore {
       allow update: if isAuthenticated();
       allow delete: if isAdmin();
     }
-    
+
+    // Chat Rooms collection
+    match /chatRooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update: if isAuthenticated();
+        allow delete: if isAuthenticated();
+      }
+    }
+
+    // Friendships collection
+    match /friendships/{friendshipId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // Friend Requests collection
+    match /friendRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // Snippets collection
+    match /snippets/{snippetId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // Daily Challenges completions
+    match /users/{userId}/dailyChallenges/{date} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // User stats
+    match /users/{userId}/stats/{statId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Code Golf Submissions
+    match /codeGolfSubmissions/{submissionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    // Flashcards progress
+    match /users/{userId}/progress/flashcards {
+      allow read, write: if request.auth.uid == userId;
+    }
+
     // Admin-only collections
     match /adminLogs/{logId} {
       allow read, write: if isAdmin();

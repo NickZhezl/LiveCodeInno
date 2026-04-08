@@ -29,6 +29,11 @@ export async function getPyodide(): Promise<PyodideInterface> {
         indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.0/full/",
       });
       
+      // Load common packages (numpy, pandas, matplotlib, etc.)
+      console.log('Loading common packages...');
+      await pyodideInstance.loadPackage(['numpy', 'pandas']);
+      console.log('Common packages loaded successfully');
+      
       console.log('Pyodide initialized successfully');
       return pyodideInstance;
     } catch (error) {

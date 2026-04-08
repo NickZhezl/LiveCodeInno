@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { FiCheckCircle, FiXCircle, FiClock, FiEye } from "react-icons/fi";
 import { firestore } from "../../main";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, onSnapshot } from "firebase/firestore";
 
 interface Submission {
   id: string;
@@ -45,37 +45,53 @@ export default function SubmissionsReview({ onBack }: SubmissionsReviewProps) {
 
   useEffect(() => {
     fetchSubmissions();
+
+    // Set up real-time listener for submissions
+    const submissionsRef = collection(firestore, "submissions");
+    const unsubscribe = onSnapshot(submissionsRef, () => {
+      fetchSubmissions();
+    });
+
+    return () => unsubscribe();
   }, []);
 
   async function fetchSubmissions() {
     try {
       setLoading(true);
-      
+
       // Get all submissions
       const submissionsRef = collection(firestore, "submissions");
-      const submissionsQuery = query(submissionsRef, where("status", "==", "completed"));
-      const submissionsSnapshot = await getDocs(submissionsQuery);
-      
+      const submissionsSnapshot = await getDocs(submissionsRef);
+
       const subsData: Submission[] = [];
       const userIds = new Set<string>();
-      
+
       submissionsSnapshot.forEach((doc) => {
         const data = doc.data();
-        subsData.push({
-          id: doc.id,
-          userId: data.userId,
-          taskId: data.taskId,
-          assignmentId: data.assignmentId,
-          code: data.code,
-          output: data.output || "",
-          expectedOutput: data.expectedOutput || "",
-          passed: data.passed,
-          status: data.status,
-          timestamp: data.timestamp?.toDate() || new Date(),
-          taskTitle: data.taskId,
-          userName: data.userId,
-        });
-        userIds.add(data.userId);
+        
+        // Filter out already approved/rejected submissions
+        if (data.approvedAt || data.rejectedAt) {
+          return; // Skip this submission
+        }
+        
+        // Only include submissions that need review
+        if (data.status === "completed" || data.status === "submitted" || data.status === "pending_review") {
+          subsData.push({
+            id: doc.id,
+            userId: data.userId,
+            taskId: data.taskId,
+            assignmentId: data.assignmentId,
+            code: data.code,
+            output: data.output || "",
+            expectedOutput: data.expectedOutput || "",
+            passed: data.passed,
+            status: data.status,
+            timestamp: data.timestamp?.toDate() || new Date(),
+            taskTitle: data.taskId,
+            userName: data.userId,
+          });
+          userIds.add(data.userId);
+        }
       });
       
       // Get user names
@@ -113,19 +129,29 @@ export default function SubmissionsReview({ onBack }: SubmissionsReviewProps) {
   async function approveSubmission(submission: Submission) {
     try {
       // Update assignment status
-      const assignmentRef = doc(firestore, "assignments", submission.assignmentId);
-      await updateDoc(assignmentRef, {
-        status: "completed",
+      if (submission.assignmentId) {
+        const assignmentRef = doc(firestore, "assignments", submission.assignmentId);
+        await updateDoc(assignmentRef, {
+          status: "completed",
+          approvedAt: new Date(),
+          approvedBy: "admin",
+        });
+      }
+
+      // Update submission with approval status
+      const submissionRef = doc(firestore, "submissions", submission.id);
+      await updateDoc(submissionRef, {
         approvedAt: new Date(),
         approvedBy: "admin",
+        status: "approved",
       });
-      
+
       // Update user progress
       const userProgressRef = doc(firestore, "users", submission.userId, "progress", "homework");
       await updateDoc(userProgressRef, {
         completedTasks: Array.isArray(submission.taskId) ? submission.taskId : [submission.taskId],
       }).catch(() => {}); // Ignore if doesn't exist
-      
+
       toast({ title: "Задание одобрено!", status: "success" });
       fetchSubmissions();
       setSelectedSubmission(null);
@@ -137,13 +163,24 @@ export default function SubmissionsReview({ onBack }: SubmissionsReviewProps) {
 
   async function rejectSubmission(submission: Submission) {
     try {
-      const assignmentRef = doc(firestore, "assignments", submission.assignmentId);
-      await updateDoc(assignmentRef, {
-        status: "failed",
+      // Update assignment status
+      if (submission.assignmentId) {
+        const assignmentRef = doc(firestore, "assignments", submission.assignmentId);
+        await updateDoc(assignmentRef, {
+          status: "failed",
+          rejectedAt: new Date(),
+          rejectedBy: "admin",
+        });
+      }
+
+      // Update submission with rejection status
+      const submissionRef = doc(firestore, "submissions", submission.id);
+      await updateDoc(submissionRef, {
         rejectedAt: new Date(),
         rejectedBy: "admin",
+        status: "rejected",
       });
-      
+
       toast({ title: "Задание отклонено", status: "warning" });
       fetchSubmissions();
       setSelectedSubmission(null);

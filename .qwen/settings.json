@@ -4,7 +4,10 @@
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(firebase *)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(vercel *)",
+      "Bash(rm *)",
+      "Bash(rmdir *)"
     ]
   },
   "$version": 3

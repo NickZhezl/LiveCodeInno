@@ -16,6 +16,14 @@ interface UserData {
   displayName: string;
   role: "user" | "admin";
   createdAt: Date;
+  color?: string;
+  nicknameColor?: string;
+  tags?: string[];
+  customTag?: string;
+  bio?: string;
+  level?: number;
+  xp?: number;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {
@@ -26,15 +34,22 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
+  refreshUserData: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  userData: null,
+  loading: true,
+  signUp: async () => {},
+  login: async () => {},
+  logout: async () => {},
+  isAdmin: false,
+  refreshUserData: async () => {},
+});
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
   return context;
 }
 
@@ -80,6 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           displayName: data.displayName,
           role: data.role || "user",
           createdAt: data.createdAt?.toDate() || new Date(),
+          color: data.color || "purple.600",
+          nicknameColor: data.nicknameColor || data.color || "purple.600",
+          tags: data.tags || [],
+          customTag: data.customTag || "",
+          bio: data.bio || "",
+          level: data.level || 1,
+          xp: data.xp || 0,
+          avatarUrl: data.avatarUrl || "",
         });
       } else {
         // Create user document if it doesn't exist
@@ -89,12 +112,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           displayName: user.displayName || "",
           role: "user",
           createdAt: new Date(),
+          color: "purple.600",
+          nicknameColor: "purple.600",
+          tags: [],
+          customTag: "",
+          bio: "",
+          level: 1,
+          xp: 0,
+          avatarUrl: "",
         };
         await setDoc(doc(firestore, "users", user.uid), userData);
         setUserData(userData);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
+    }
+  }
+
+  async function refreshUserData() {
+    if (currentUser) {
+      await fetchUserData(currentUser);
     }
   }
 
@@ -120,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     isAdmin: userData?.role === "admin",
+    refreshUserData,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

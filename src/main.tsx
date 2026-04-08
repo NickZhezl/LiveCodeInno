@@ -29,6 +29,9 @@ export const firestore = getFirestore(app);
 export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 
+import { AuthProvider } from "./contexts/AuthContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
+
 console.log("Firebase initialized for: Live Code project");
 
 const rootElement = document.getElementById("root");
@@ -38,7 +41,11 @@ if (rootElement) {
   root.render(
     <React.StrictMode>
       <ChakraProvider theme={theme}>
-        <App />
+        <AuthProvider>
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
+        </AuthProvider>
       </ChakraProvider>
     </React.StrictMode>
   );
